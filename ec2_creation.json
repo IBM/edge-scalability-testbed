@@ -2,37 +2,37 @@
     "changed": true,
     "failed": false,
     "instance_ids": [
-        "i-03e1ca664a87bdaf7",
-        "i-0bfe009d22ef57e9c"
+        "i-034ca8bd080fbac1b",
+        "i-0d01b301552e05575"
     ],
     "instances": [
         {
-            "ami_launch_index": "1",
+            "ami_launch_index": "0",
             "architecture": "x86_64",
             "block_device_mapping": {
                 "/dev/sda1": {
                     "delete_on_termination": true,
                     "status": "attached",
-                    "volume_id": "vol-0199d476f7f93c64b"
+                    "volume_id": "vol-02b22ab0eeba8aea4"
                 }
             },
-            "dns_name": "ec2-44-202-98-202.compute-1.amazonaws.com",
+            "dns_name": "ec2-34-230-81-221.compute-1.amazonaws.com",
             "ebs_optimized": false,
             "groups": {
                 "sg-fdad4286": "default"
             },
             "hypervisor": "xen",
-            "id": "i-03e1ca664a87bdaf7",
-            "image_id": "ami-0b0af3577fe5e3532",
+            "id": "i-034ca8bd080fbac1b",
+            "image_id": "ami-04505e74c0741db8d",
             "instance_type": "t2.micro",
             "kernel": null,
             "key_name": "amazontestkey",
-            "launch_time": "2022-02-05T04:59:06.000Z",
+            "launch_time": "2022-02-05T15:23:13.000Z",
             "placement": "us-east-1b",
-            "private_dns_name": "ip-172-31-52-136.ec2.internal",
-            "private_ip": "172.31.52.136",
-            "public_dns_name": "ec2-44-202-98-202.compute-1.amazonaws.com",
-            "public_ip": "44.202.98.202",
+            "private_dns_name": "ip-172-31-48-214.ec2.internal",
+            "private_ip": "172.31.48.214",
+            "public_dns_name": "ec2-34-230-81-221.compute-1.amazonaws.com",
+            "public_ip": "34.230.81.221",
             "ramdisk": null,
             "region": "us-east-1",
             "root_device_name": "/dev/sda1",
@@ -44,32 +44,32 @@
             "virtualization_type": "hvm"
         },
         {
-            "ami_launch_index": "0",
+            "ami_launch_index": "1",
             "architecture": "x86_64",
             "block_device_mapping": {
                 "/dev/sda1": {
                     "delete_on_termination": true,
                     "status": "attached",
-                    "volume_id": "vol-0c1dbb06cf82d0acb"
+                    "volume_id": "vol-0afe259a35b9fe3eb"
                 }
             },
-            "dns_name": "ec2-18-212-29-2.compute-1.amazonaws.com",
+            "dns_name": "ec2-35-173-211-148.compute-1.amazonaws.com",
             "ebs_optimized": false,
             "groups": {
                 "sg-fdad4286": "default"
             },
             "hypervisor": "xen",
-            "id": "i-0bfe009d22ef57e9c",
-            "image_id": "ami-0b0af3577fe5e3532",
+            "id": "i-0d01b301552e05575",
+            "image_id": "ami-04505e74c0741db8d",
             "instance_type": "t2.micro",
             "kernel": null,
             "key_name": "amazontestkey",
-            "launch_time": "2022-02-05T04:59:06.000Z",
+            "launch_time": "2022-02-05T15:23:13.000Z",
             "placement": "us-east-1b",
-            "private_dns_name": "ip-172-31-55-132.ec2.internal",
-            "private_ip": "172.31.55.132",
-            "public_dns_name": "ec2-18-212-29-2.compute-1.amazonaws.com",
-            "public_ip": "18.212.29.2",
+            "private_dns_name": "ip-172-31-51-43.ec2.internal",
+            "private_ip": "172.31.51.43",
+            "public_dns_name": "ec2-35-173-211-148.compute-1.amazonaws.com",
+            "public_ip": "35.173.211.148",
             "ramdisk": null,
             "region": "us-east-1",
             "root_device_name": "/dev/sda1",

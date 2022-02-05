@@ -1,7 +1,7 @@
 ---
 # defaults file for ec2instances
 region: us-east-1
-image_id: ami-0b0af3577fe5e3532 # RHEL 8.4
+image_id: ami-04505e74c0741db8d # Ubuntu 20.04 LTS, amd64 focal image build on 2021-11-29
 instance_type: t2.micro
 key_name: amazontestkey
 count: 1
