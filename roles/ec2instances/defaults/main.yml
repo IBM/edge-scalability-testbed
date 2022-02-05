@@ -1,0 +1,7 @@
+---
+# defaults file for ec2instances
+region: us-east-1
+image_id: ami-0b0af3577fe5e3532 # RHEL 8.4
+instance_type: t2.micro
+key_name: amazontestkey
+count: 1

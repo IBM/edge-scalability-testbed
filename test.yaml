@@ -1,0 +1,20 @@
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Include vars
+    include_vars:
+      file: ec2_creation.json
+      name: ec2_creation
+
+  - name: Get private IPs
+    set_fact:
+      private_ips: "{{ ec2_creation | community.general.json_query('instances[*].private_ip') }}"
+  - debug:
+      var: private_ips
+
+  - name: Get public IPs
+    set_fact:
+      public_ips: "{{ ec2_creation | community.general.json_query('instances[*].public_ip') }}"
+  - debug:
+      var: public_ips
