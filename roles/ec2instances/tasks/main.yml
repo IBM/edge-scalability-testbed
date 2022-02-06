@@ -9,6 +9,7 @@
     image: "{{ image_id }}"
     instance_type: "{{ instance_type }}"
     key_name: "{{ key_name }}"
+    group: "{{ group }}"
     count: "{{ count }}"
     wait: yes
   register: ec2_creation
