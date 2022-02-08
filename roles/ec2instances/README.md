@@ -34,7 +34,7 @@ Example Playbook
   roles:
     - role: ec2instances
       vars:
-        instance_type: t2.micro
+        instance_type: t2.medium
         count: 2
 
   post_tasks:

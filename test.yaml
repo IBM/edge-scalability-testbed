@@ -18,3 +18,11 @@
       private_ips: "{{ ec2_creation | community.general.json_query('instances[*].private_ip') }}"
   - debug:
       var: private_ips
+
+  - name: Split public IPs for masters and workers
+    split_ips:
+      public_ips: "{{ public_ips }}"
+      position: 1
+    register: split
+  - debug:
+      var: split
