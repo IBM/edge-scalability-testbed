@@ -19,10 +19,14 @@
   - debug:
       var: private_ips
 
-  - name: Hello Split public IPs for masters and workers
+  - name: Split public IPs for masters and workers
     split_ips:
       public_ips: "{{ public_ips }}"
       position: 1
     register: split
   - debug:
       var: split
+
+  # - name: Create the hosts file
+  #   ansible.builtin.script:
+  #     cmd: build_host_file.py "{{ split }}"
