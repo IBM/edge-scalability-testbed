@@ -4,7 +4,7 @@
   tasks:
   - name: Include vars
     include_vars:
-      file: ec2_instances.json # example output of instance creation
+      file: .ec2instances/ec2_instances.json # persisted instance data
       name: ec2_instances
 
   - name: Get public IPs
