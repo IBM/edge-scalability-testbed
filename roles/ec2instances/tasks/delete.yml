@@ -3,4 +3,4 @@
     region: "{{ region }}"
     state: "absent"
     instance_ids: "{{ instance_ids }}"
-  register: ec2_deletion
+  register: ec2_instances

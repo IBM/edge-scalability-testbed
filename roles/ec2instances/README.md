@@ -42,7 +42,7 @@ Create EC2 instance(s):
   post_tasks:
   - debug:
       msg:
-      - "{{ ec2_creation }}"
+      - "{{ ec2_instances }}"
       - "{{ public_ips }}"
       - "{{ private_ips }}"
 ```
@@ -60,5 +60,5 @@ Delete EC2 instance(s):
   post_tasks:
   - debug:
       msg:
-      - "{{ ec2_deletion }}"
+      - "{{ ec2_instances }}"
 ```

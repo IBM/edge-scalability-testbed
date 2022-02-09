@@ -1,0 +1,26 @@
+---
+- hosts: localhost
+  roles:
+    - role: ec2instances
+      vars:
+        verb: create
+        instance_type: t2.medium
+        count: 2
+
+  post_tasks:
+  - debug:
+      msg:
+      - "{{ ec2_instances }}"
+      - "{{ public_ips }}"
+      - "{{ private_ips }}"
+
+  - name: Create a directory to persist data
+    ansible.builtin.file:
+      path: .data
+      state: directory
+      mode: '0755'
+
+  - name: Persist instance data
+    ansible.builtin.copy:
+      content: "{{ ec2_instances | to_nice_json }}"
+      dest: .data/ec2_instances.json

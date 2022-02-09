@@ -2,31 +2,12 @@
 - hosts: localhost
   gather_facts: no
   tasks:
-  - name: Include vars
+  - name: Read instance data
     include_vars:
-      file: ec2_creation.json # example output of instance creation
-      name: ec2_creation
+      file: .data/ec2_instances.json
+      name: ec2_instances
 
-  - name: Get public IPs
-    set_fact:
-      public_ips: "{{ ec2_creation | community.general.json_query('instances[*].public_ip') }}"
-  - debug:
-      var: public_ips
-
-  - name: Get private IPs
-    set_fact:
-      private_ips: "{{ ec2_creation | community.general.json_query('instances[*].private_ip') }}"
-  - debug:
-      var: private_ips
-
-  - name: Split public IPs for masters and workers
-    split_ips:
-      public_ips: "{{ public_ips }}"
-      position: 1
-    register: split
-  - debug:
-      var: split
-
-  # - name: Create the hosts file
-  #   ansible.builtin.script:
-  #     cmd: build_host_file.py "{{ split }}"
+  - include_role:
+      name: ec2instance_data
+    vars:
+      operation: ips2ids
