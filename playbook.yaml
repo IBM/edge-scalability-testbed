@@ -1,0 +1,58 @@
+# (1) Creating a Kubernetes Cluster Master Node 
+# - hosts: masters
+#   remote_user: ubuntu
+#   become: yes
+#   gather_facts: yes
+#   connection: ssh
+#   roles:
+#     - kubernetes/commons/install
+#     - kubernetes/master
+
+# (2) Get the token for joining the worker nodes
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  gather_facts: yes
+  connection: ssh
+  roles:
+    - kubernetes/commons/join-token
+
+
+# (3) Join Worker Nodes to Kubernetes Cluster
+- hosts: add_workers
+  remote_user: ubuntu
+  become: yes
+  gather_facts: yes
+  roles:
+    - kubernetes/commons/install
+    - kubernetes/worker
+
+
+# # (4) Remove a worker node
+# - hosts: masters
+#   remote_user: ubuntu
+#   become: yes
+#   gather_facts: yes
+#   vars:
+#     node_name: ip-172-31-32-183
+#   roles:
+#     - kubernetes/commons/delete-node
+
+
+# - hosts: remove_workers
+#   remote_user: ubuntu
+#   become: yes
+#   gather_facts: yes
+#   roles:
+#     - kubernetes/commons/uninstall
+
+
+# # (1) Creating a Kubernetes Cluster Master Node 
+# - hosts: masters
+#   remote_user: ubuntu
+#   become: yes
+#   tasks:
+#     - name: Run a script with arguments (using 'cmd' parameter)
+#       ansible.builtin.script:
+#         cmd: ./build_host_file.py braulio
+
