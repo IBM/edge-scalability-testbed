@@ -3,7 +3,7 @@
   tasks:
   - name: Read instance data
     include_vars:
-      file: .ec2instances/ec2_instances.json
+      file: .data/ec2_instances.json
       name: ec2_instances
 
   - name: Delete all instances
@@ -15,7 +15,7 @@
 
   - name: Purge instance data
     ansible.builtin.file:
-      path: .ec2instances/ec2_instances.json
+      path: .data/ec2_instances.json
       state: absent
 
   post_tasks:

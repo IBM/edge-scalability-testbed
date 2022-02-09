@@ -14,13 +14,13 @@
       - "{{ public_ips }}"
       - "{{ private_ips }}"
 
-  - name: Create a directory to persist instance data
+  - name: Create a directory to persist data
     ansible.builtin.file:
-      path: .ec2instances
+      path: .data
       state: directory
       mode: '0755'
 
   - name: Persist instance data
     ansible.builtin.copy:
       content: "{{ ec2_instances | to_nice_json }}"
-      dest: .ec2instances/ec2_instances.json
+      dest: .data/ec2_instances.json
