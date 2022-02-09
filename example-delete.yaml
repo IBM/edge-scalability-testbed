@@ -1,0 +1,24 @@
+---
+- hosts: localhost
+  tasks:
+  - name: Read instance data
+    include_vars:
+      file: .ec2instances/ec2_instances.json
+      name: ec2_instances
+
+  - name: Delete all instances
+    include_role:
+      name: ec2instances
+    vars:
+      verb: delete
+      instance_ids: "{{ ec2_instances.instance_ids }}"
+
+  - name: Purge instance data
+    ansible.builtin.file:
+      path: .ec2instances/ec2_instances.json
+      state: absent
+
+  post_tasks:
+  - debug:
+      msg:
+      - "{{ ec2_instances }}"

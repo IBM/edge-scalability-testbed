@@ -2,9 +2,9 @@
 - hosts: localhost
   gather_facts: no
   tasks:
-  - name: Include vars
+  - name: Read instance data
     include_vars:
-      file: .ec2instances/ec2_instances.json # persisted instance data
+      file: .ec2instances/ec2_instances.json
       name: ec2_instances
 
   - name: Get public IPs
