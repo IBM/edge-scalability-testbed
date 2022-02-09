@@ -1,0 +1,27 @@
+---
+# tasks file for master
+- name: initialize the cluster
+  shell: kubeadm init --pod-network-cidr=10.244.0.0/16
+  args:
+    chdir: $HOME
+    creates: cluster_initialized.txt
+
+- name: create .kube directory
+  become: yes
+  file:
+    path: $HOME/.kube
+    state: directory
+    mode: 0755
+
+- name: copies admin.conf to user's kube config
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: yes
+    owner: root
+
+- name: install Pod network
+  become: yes
+  shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml 
+  args:
+    chdir: $HOME

@@ -1,0 +1,8 @@
+[masters]
+18.220.226.130
+
+[add_workers]
+13.59.196.246
+
+[remove_workers]
+3.145.5.34
