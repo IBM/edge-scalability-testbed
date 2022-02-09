@@ -1,4 +1,4 @@
 ---
 # tasks file for ec2instance_data
-- include_task: ips2ids.yml
+- include_tasks: ips2ids.yml
   when: operation == "ips2ids"
