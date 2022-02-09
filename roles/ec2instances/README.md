@@ -26,14 +26,16 @@ Dependencies
 
 N/A
 
-Example Playbook
-----------------
+Example Playbooks
+-----------------
+Create EC2 instance(s):
 ```
 ---
 - hosts: localhost
   roles:
     - role: ec2instances
       vars:
+        verb: create
         instance_type: t2.medium
         count: 2
 
@@ -43,4 +45,20 @@ Example Playbook
       - "{{ ec2_creation }}"
       - "{{ public_ips }}"
       - "{{ private_ips }}"
+```
+
+Delete EC2 instance(s):
+```
+---
+- hosts: localhost
+  roles:
+    - role: ec2instances
+      vars:
+        verb: delete
+        instance_ids: ["i-0302409269dcd826f","i-0d0f441666c10085c"]
+
+  post_tasks:
+  - debug:
+      msg:
+      - "{{ ec2_deletion }}"
 ```

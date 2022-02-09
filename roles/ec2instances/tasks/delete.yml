@@ -1,0 +1,6 @@
+- name: Terminate instance(s)
+  ec2:
+    region: "{{ region }}"
+    state: "absent"
+    instance_ids: "{{ instance_ids }}"
+  register: ec2_deletion

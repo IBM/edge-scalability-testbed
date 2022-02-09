@@ -1,0 +1,23 @@
+---
+- name: Show infomation before creating ec2 instance(s)
+  debug:
+    msg: creating {{ count }} {{ instance_type }} with image {{ image_id }}
+
+- name: Create ec2 instance(s)
+  ec2:
+    region: "{{ region }}"
+    image: "{{ image_id }}"
+    instance_type: "{{ instance_type }}"
+    key_name: "{{ key_name }}"
+    group: "{{ group }}"
+    count: "{{ count }}"
+    wait: yes
+  register: ec2_creation
+
+- name: Get private IPs
+  set_fact:
+    private_ips: "{{ ec2_creation | community.general.json_query('instances[*].private_ip') }}"
+
+- name: Get public IPs
+  set_fact:
+    public_ips: "{{ ec2_creation | community.general.json_query('instances[*].public_ip') }}"
