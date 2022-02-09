@@ -24,3 +24,11 @@
     ansible.builtin.copy:
       content: "{{ ec2_instances | to_nice_json }}"
       dest: .data/ec2_instances.json
+
+  - name: Split public IPs for masters and workers
+    split_ips:
+      public_ips: "{{ public_ips }}"
+      position: 1
+    register: split
+  - debug:
+      var: split

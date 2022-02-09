@@ -13,7 +13,10 @@ Role Variables
 
 Default role variables are defined in defaults/main.yml.
 
-A security group which allows SSH for Ansible engine should be manually created or updated before using this role.
+A security group which
+- allows SSH (port 22) for Ansible engine;
+- allows k8s apiserver (port 6443) for the nodes;
+should be created or updated before using this role.
 The security group name (not group ID) can then be referenced by the `group` role variable in defaults/main.yml, e.g.:
 ```
 group: ec2nodes
