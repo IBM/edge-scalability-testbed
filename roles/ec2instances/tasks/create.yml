@@ -12,12 +12,12 @@
     group: "{{ group }}"
     count: "{{ count }}"
     wait: yes
-  register: ec2_creation
+  register: ec2_instances
 
 - name: Get private IPs
   set_fact:
-    private_ips: "{{ ec2_creation | community.general.json_query('instances[*].private_ip') }}"
+    private_ips: "{{ ec2_instances | community.general.json_query('instances[*].private_ip') }}"
 
 - name: Get public IPs
   set_fact:
-    public_ips: "{{ ec2_creation | community.general.json_query('instances[*].public_ip') }}"
+    public_ips: "{{ ec2_instances | community.general.json_query('instances[*].public_ip') }}"
