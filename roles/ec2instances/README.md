@@ -1,7 +1,7 @@
 ec2instances
 =========
 
-Create EC2 instance(s).
+Manage EC2 instance(s).
 
 Requirements
 ------------
@@ -11,9 +11,9 @@ Python package `boto` is required.
 Role Variables
 --------------
 
-Default role variables are defined in defaults/main.yml.
-
 AWS credentials are NOT coded as role variables. They can be set by environment variables, e.g. `AWS_ACCESS_KEY` and `AWS_SECRET_KEY`.
+
+Default role variables are defined in defaults/main.yml.
 
 Dependencies
 ------------
