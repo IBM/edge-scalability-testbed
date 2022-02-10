@@ -15,7 +15,7 @@ def main():
     worker_public_ips = public_ips[position:]
 
 
-    fout = open('hosts', 'w') # output ansible hosts file with ec2 public ip addresses
+    fout = open('.data/hosts', 'w') # output ansible hosts file with ec2 public ip addresses
     fout.write('[masters]' + "\n")
 
     i=1
