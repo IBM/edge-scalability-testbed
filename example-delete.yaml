@@ -1,5 +1,9 @@
 ---
 - hosts: localhost
+  gather_facts: no
+  vars:
+    region: us-east-1
+
   tasks:
   - name: Read instance data
     include_vars:
@@ -18,7 +22,13 @@
       path: .data/ec2_instances.json
       state: absent
 
-  post_tasks:
-  - debug:
+  - name: Show instance data
+    debug:
       msg:
       - "{{ ec2_instances }}"
+
+  - name: Delete the security group
+    amazon.aws.ec2_group:
+      region: us-east-1
+      name: ec2nodes
+      state: absent

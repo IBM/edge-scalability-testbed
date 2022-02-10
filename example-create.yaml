@@ -1,14 +1,39 @@
 ---
 - hosts: localhost
-  roles:
-    - role: ec2instances
-      vars:
-        verb: create
-        instance_type: t2.medium
-        count: 2
+  gather_facts: no
+  vars:
+    region: us-east-1
+    masters: 1
+    workers: 1
 
-  post_tasks:
-  - debug:
+  tasks:
+  - name: Get public IP address of the host of Ansible engine
+    shell: curl ifconfig.me
+    register: my_public_ip
+
+  - name: Create security group
+    amazon.aws.ec2_group:
+      name: ec2nodes
+      description: Used for Ansible automation
+      region: "{{ region}}"
+      rules:
+        - proto: tcp
+          ports: 22
+          cidr_ip: "{{ my_public_ip.stdout }}/32"
+        - proto: -1
+          ports: -1
+          group_name: ec2nodes
+    diff: true
+
+  - name: Create EC2 instances
+    include_role: name=ec2instances
+    vars:
+      verb: create
+      instance_type: t2.medium
+      count: "{{ masters + workers }}"
+
+  - name: Show instance data
+    debug:
       msg:
       - "{{ ec2_instances }}"
       - "{{ public_ips }}"
@@ -25,10 +50,10 @@
       content: "{{ ec2_instances | to_nice_json }}"
       dest: .data/ec2_instances.json
 
-  - name: Split public IPs for masters and workers
+  - name: Assign IPs for k8s masters and workers
     split_ips:
       public_ips: "{{ public_ips }}"
-      position: 1
+      position: "{{ masters }}"
     register: split
   - debug:
       var: split
