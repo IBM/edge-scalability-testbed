@@ -1,0 +1,18 @@
+## Get the token for joining the worker nodes
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  gather_facts: yes
+  connection: ssh
+  roles:
+    - kubernetes/commons/join-token
+
+
+## Join Worker Nodes to Kubernetes Cluster
+- hosts: add_workers
+  remote_user: ubuntu
+  become: yes
+  gather_facts: yes
+  roles:
+    - kubernetes/commons/install
+    - kubernetes/worker

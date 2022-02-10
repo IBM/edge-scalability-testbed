@@ -1,0 +1,9 @@
+## Creating a Kubernetes Cluster Master Node 
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  gather_facts: yes
+  connection: ssh
+  roles:
+    - kubernetes/commons/install
+    - kubernetes/master
