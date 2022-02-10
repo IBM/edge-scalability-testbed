@@ -30,7 +30,6 @@
     include_role: name=ec2instances
     vars:
       verb: create
-      instance_type: "{{ instance_type }}"
       count: "{{ masters + workers }}"
 
   - name: Show instance data
