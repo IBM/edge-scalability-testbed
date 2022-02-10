@@ -15,7 +15,7 @@
     amazon.aws.ec2_group:
       name: ec2nodes
       description: Used for Ansible automation
-      region: "{{ region}}"
+      region: "{{ region }}"
       rules:
         - proto: tcp
           ports: 22

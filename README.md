@@ -8,7 +8,7 @@ EC2 region, number of master nodes and worker nodes are specified in playbook `v
 ansible-playbook create-ec2.yaml
 ```
 
-2. Deploy Kubernete cluster.
+2. Deploy Kubernetes cluster.
 ```
 ansible-playbook -i .data/hosts deploy-master.yaml
 ansible-playbook -i .data/hosts deploy-worker.yaml

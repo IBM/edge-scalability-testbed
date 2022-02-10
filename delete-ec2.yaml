@@ -29,6 +29,6 @@
 
   - name: Delete the security group
     amazon.aws.ec2_group:
-      region: us-east-1
+      region: "{{ region }}"
       name: ec2nodes
       state: absent
