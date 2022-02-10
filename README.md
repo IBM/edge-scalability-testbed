@@ -3,7 +3,7 @@ Homemade Ansible automation for k8s nodes on AWS EC2
 
 ### Example Usage
 1. Create the infrastructure including a security group and EC2 instances on AWS.
-EC2 region, number of master nodes and worker nodes are specified in playbook `vars`.
+EC2 region, numbers of master nodes and worker nodes, and instance type can be specified in playbook `vars`.
 ```
 ansible-playbook create-ec2.yaml
 ```
