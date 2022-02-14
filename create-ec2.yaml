@@ -5,7 +5,7 @@
     region: us-east-1
     masters: 1
     workers: 1
-    instance_type: t2.medium
+    instance_type: t2.xlarge
 
   tasks:
   - name: Get public IP address of the host of Ansible engine
