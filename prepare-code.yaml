@@ -1,0 +1,62 @@
+---
+- hosts: masters
+  remote_user: ubuntu
+  become: true
+  gather_facts: yes
+  tasks:
+    - name: Install make
+      shell: |
+        apt install -y make
+
+    - name: Install docker
+      shell: |
+        apt-get update
+        apt-get install -y ca-certificates curl gnupg lsb-release
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        apt-get update
+        apt-get install -y -o Dpkg::Options::=--force-confdef docker-ce docker-ce-cli containerd.io
+
+    - name: Install helm
+      shell : |
+        curl -LO https://get.helm.sh/helm-v3.8.0-linux-amd64.tar.gz
+        tar -xzf helm-v3.8.0-linux-amd64.tar.gz
+        rm helm-v3.8.0-linux-amd64.tar.gz
+        mv linux-amd64/helm /usr/local/bin/
+        rm -r linux-amd64/
+
+    - name: Install jq
+      shell: |
+        apt install -y jq
+
+    - name: Install clusteradm
+      shell: |
+        curl -LO https://github.com/open-cluster-management-io/clusteradm/releases/download/v0.1.0/clusteradm_linux_amd64.tar.gz
+        tar -xzf clusteradm_linux_amd64.tar.gz
+        rm clusteradm_linux_amd64.tar.gz
+        mv clusteradm /usr/local/bin/
+        rm LICENSE
+
+    - name: Install kind
+      shell: |
+        curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
+        chmod +x ./kind
+        mv ./kind /usr/local/bin/
+
+    - name: Get kealm code
+      shell: |
+        git -C /root/ clone https://github.com/pdettori/kealm.git
+
+    - name: Get cymba code
+      shell: |
+        git -C /root/ clone https://github.com/pdettori/cymba.git
+
+    - name: Add kealm's plugin
+      ansible.builtin.lineinfile:
+        path: /root/.bashrc
+        line: "export PATH=$PATH:/root/kealm/deploy"
+
+    - name: Let kc = kubectl
+      ansible.builtin.lineinfile:
+        path: /root/.bashrc
+        line: "alias kc='kubectl'"
