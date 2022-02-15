@@ -17,7 +17,12 @@ ansible-playbook -i .data/hosts deploy-master.yaml
 ansible-playbook -i .data/hosts deploy-worker.yaml
 ```
 
-3. (Optional) Delete worker nodes from the cluster.
+3. Prepare the code repositories ([kealm](https://github.com/pdettori/kealm) and [cymba](https://github.com/pdettori/cymba)) along with their dependencies.
+```
+ansible-playbook -i .data/hosts prepare-code.yaml
+```
+
+4. (Optional) Delete worker nodes from the cluster.
 Edit `.data/hosts` by adding the corresponding entries in the `[remove_workers]` Ansible inventory group.
 Edit `delete-worker.yaml` by changing the `node_name`, which is shown by `kubectl get nodes`.
 Run the playbook:
@@ -25,7 +30,7 @@ Run the playbook:
 ansible-playbook -i .data/hosts delete-worker.yaml
 ```
 
-4. Destroy the infrastructure.
+5. Destroy the infrastructure.
 ```
 ansible-playbook delete-ec2.yaml
 ```
