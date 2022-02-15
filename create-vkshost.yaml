@@ -3,6 +3,7 @@
   remote_user: ubuntu
   become: true
   gather_facts: yes
+  connection: ssh
   tasks:
     - name: Install make
       shell: |
@@ -60,3 +61,7 @@
       ansible.builtin.lineinfile:
         path: /root/.bashrc
         line: "alias kc='kubectl'"
+
+    - name: Bootstrap vks host
+      shell: |
+        make -C /root/kealm create-cluster
