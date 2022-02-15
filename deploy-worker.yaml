@@ -1,4 +1,4 @@
-## Get the token for joining the worker nodes
+## Get the token for joining the worker nodes - copy to Ansible control node
 - hosts: masters
   remote_user: ubuntu
   become: yes
@@ -16,3 +16,13 @@
   roles:
     - kubernetes/commons/install
     - kubernetes/worker
+
+
+## Delete token for joining the worker nodes from Ansible control node
+- hosts: localhost
+  become: yes
+  tasks:
+    - name: Remove worker join-token file from Ansible control node
+      ansible.builtin.file:
+        path: /tmp/kubernetes_join_command
+        state: absent
