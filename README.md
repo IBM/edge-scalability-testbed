@@ -19,7 +19,7 @@ ansible-playbook -i .data/hosts deploy-worker.yaml
 
 3. Prepare the code repositories ([kealm](https://github.com/pdettori/kealm) and [cymba](https://github.com/pdettori/cymba)) along with their dependencies.
 ```
-ansible-playbook -i .data/hosts prepare-code.yaml
+ansible-playbook -i .data/hosts create-vkshost.yaml
 ```
 
 4. (Optional) Delete worker nodes from the cluster.
