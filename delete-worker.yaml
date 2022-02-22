@@ -1,10 +1,10 @@
-##  Remove a worker node
+#  Remove a worker node
 - hosts: masters
   remote_user: ubuntu
   become: yes
   gather_facts: yes
   vars:
-    node_name: ip-172-31-61-84
+    node_name_list: [ip-172-31-34-147, ip-172-31-44-50]
   roles:
     - kubernetes/commons/delete-node
 

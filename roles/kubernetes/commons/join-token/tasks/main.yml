@@ -6,7 +6,9 @@
   register: kubernetes_join_command
 
 
-- name: Copy join command to local file.
-  become: yes
-  local_action: copy content="{{ kubernetes_join_command.stdout_lines[0] }}" dest="/tmp/kubernetes_join_command" mode=0777
+- name: Copy using inline content
+  ansible.builtin.copy:
+    content: "{{ kubernetes_join_command.stdout_lines[0] }}"
+    dest: "/tmp/kubernetes_join_command"
+    mode: 0777
 

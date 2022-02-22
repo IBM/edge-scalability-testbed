@@ -1,4 +1,4 @@
-## Get the token for joining the worker nodes - copy to Ansible control node
+# Get the token for joining the worker nodes - copy to Ansible control node
 - hosts: masters
   remote_user: ubuntu
   become: yes
@@ -8,21 +8,31 @@
     - kubernetes/commons/join-token
 
 
-## Join Worker Nodes to Kubernetes Cluster
+# Initialize mock environment
+- hosts: masters
+  remote_user: ubuntu
+  gather_facts: yes
+  become: yes
+  vars:
+    remote_path: '/tmp/kubernetes_join_command'
+  tasks:
+    - name: get content of remote file
+      slurp:
+        src: "{{ remote_path }}"
+      register: remote_content_encoded
+
+    - name: decode remote content
+      set_fact:
+        remote_content: "{{remote_content_encoded.content | b64decode}}"
+      register: remote_content_values
+
+
+# Join Worker Nodes to Kubernetes Cluster
 - hosts: add_workers
   remote_user: ubuntu
   become: yes
-  gather_facts: yes
+  vars:
+    join_command: "{{ hostvars[groups['masters'][0]].remote_content_values['ansible_facts']['remote_content'] }}"
   roles:
     - kubernetes/commons/install
     - kubernetes/worker
-
-
-## Delete token for joining the worker nodes from Ansible control node
-- hosts: localhost
-  become: yes
-  tasks:
-    - name: Remove worker join-token file from Ansible control node
-      ansible.builtin.file:
-        path: /tmp/kubernetes_join_command
-        state: absent

@@ -1,0 +1,17 @@
+---
+# tasks file for cluster-join
+- name: Get the list of Managed Clusters with pending certificate signing request (CSR)
+  become: yes
+  shell: kubectl get managedclusters -o=jsonpath="{range .items[?(@.spec.hubAcceptsClient=="false")]}{.metadata.name}{'\n'}{end}"
+  register: managedclusters_json
+
+- name: Store the list of Managed Clusters
+  set_fact:
+    clusters: "{{ managedclusters_json.stdout}}"
+
+- name: Accept the cluster join request to approve the CSR
+  become: yes
+  shell: clusteradm accept --clusters {{ item }}
+  with_items: 
+    - "{{ clusters.split('\n') }}"
+

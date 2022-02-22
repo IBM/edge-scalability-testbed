@@ -2,5 +2,6 @@
 # tasks file for remove-worker
 - name: remove kubernetes worker node
   shell: |
-         kubectl drain '{{ node_name }}' --ignore-daemonsets --delete-emptydir-data --force
-         kubectl delete node '{{ node_name }}'
+         kubectl drain '{{ item }}' --ignore-daemonsets --delete-emptydir-data --force
+         kubectl delete node '{{ item }}'
+  with_items: '{{ node_name_list }}'
