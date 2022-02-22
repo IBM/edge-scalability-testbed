@@ -1,13 +1,13 @@
 
 # Install required packages to Ansible Control Node
-- hosts: localhost
-  remote_user: ubuntu
-  become: yes
-  tasks:
-    - name: Add Required Packages to Ansible Control Node
-      shell: |
-             ansible-galaxy collection install cloud.common
-             ansible-galaxy collection install kubernetes.core
+# - hosts: localhost
+#   remote_user: ubuntu
+#   become: yes
+#   tasks:
+#     - name: Add Required Packages to Ansible Control Node
+#       shell: |
+#              ansible-galaxy collection install cloud.common
+#              ansible-galaxy collection install kubernetes.core
 
 
 # Install required packages to the mockcluster node
@@ -26,6 +26,9 @@
   remote_user: ubuntu
   become: yes
   tasks:
+    - name: Change to kind-vkshost (TEMPORARY FIX)
+      shell: kubectl config use-context kind-vkshost
+
     - name: Get the token for joining the worker nodes
       become: yes
       shell: kubectl -n vks1-system get configmaps join-command -o yaml
@@ -40,6 +43,7 @@
 
 # Initialize mock environment
 - hosts: masters
+  remote_user: ubuntu
   become: yes
   vars:
     remote_path: '/tmp/mockcluster_join_command'
@@ -61,6 +65,9 @@
   vars:
     join_command: "{{ hostvars[groups['masters'][0]].remote_content_values['ansible_facts']['remote_content'] }}"
   tasks:
+    - name: Change to kubernetes-admin@kubernetes (TEMPORARY FIX)
+      shell: kubectl config use-context kubernetes-admin@kubernetes
+
     - name: Set variables
       set_fact:
         values: "{{ join_command.split(' ')}}"
@@ -91,6 +98,13 @@
 
 
 # tasks for the (virtual) hub to accept join request
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  tasks:
+    - name: Change to vks1 (TEMPORARY FIX)
+      shell: kubectl config use-context vks1
+
 - hosts: masters
   remote_user: ubuntu
   become: yes

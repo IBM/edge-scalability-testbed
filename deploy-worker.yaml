@@ -1,4 +1,4 @@
-# Get the token for joining the worker nodes - copy to Ansible control node
+# Get joining token for the worker nodes
 - hosts: masters
   remote_user: ubuntu
   become: yes
@@ -8,7 +8,7 @@
     - kubernetes/commons/join-token
 
 
-# Initialize mock environment
+# Make joining token available to be applied to worker nodes
 - hosts: masters
   remote_user: ubuntu
   gather_facts: yes
@@ -27,7 +27,7 @@
       register: remote_content_values
 
 
-# Join Worker Nodes to Kubernetes Cluster
+# Add worker nodes to Kubernetes cluster
 - hosts: add_workers
   remote_user: ubuntu
   become: yes
