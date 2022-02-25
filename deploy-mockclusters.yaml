@@ -1,0 +1,112 @@
+
+Install required packages to Ansible Control Node
+- hosts: localhost
+  remote_user: ubuntu
+  become: yes
+  tasks:
+    - name: Add Required Packages to Ansible Control Node
+      shell: |
+             ansible-galaxy collection install cloud.common
+             ansible-galaxy collection install kubernetes.core
+
+
+# Install required packages to the mockcluster node
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  tasks:
+    - name: Add Required Packages to Ansible Control Node
+      shell: |
+             apt install python3-pip -y
+             /usr/bin/python3 -m pip install kubernetes
+
+
+# tasks to extract join-token from virtual hub host cluster
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  tasks:
+    - name: Change to kind-vkshost (TEMPORARY FIX)
+      shell: kubectl config use-context kind-vkshost
+
+    - name: Get the token for joining the worker nodes
+      become: yes
+      shell: kubectl -n vks1-system get configmaps join-command -o yaml
+      register: mockcluster_join_command
+
+    - name: Copy join command to local file
+      ansible.builtin.copy:
+        content: "{{ mockcluster_join_command.stdout_lines[3] }}"
+        dest: "/tmp/mockcluster_join_command"
+        mode: 0777
+
+
+# Initialize mock environment
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  vars:
+    remote_path: '/tmp/mockcluster_join_command'
+  tasks:
+    - name: get content of remote file
+      slurp:
+        src: "{{ remote_path }}"
+      register: remote_content_encoded
+
+    - name: decode remote content
+      set_fact:
+        remote_content: "{{remote_content_encoded.content | b64decode}}"
+      register: remote_content_values
+
+
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  vars:
+    join_command: "{{ hostvars[groups['masters'][0]].remote_content_values['ansible_facts']['remote_content'] }}"
+  tasks:
+    - name: Change to kubernetes-admin@kubernetes (TEMPORARY FIX)
+      shell: kubectl config use-context kubernetes-admin@kubernetes
+
+    - name: Set variables
+      set_fact:
+        values: "{{ join_command.split(' ')}}"
+
+    - name: Initialize mock environment
+      shell: "~/cymba/cmd/mock/init-testbed.sh join {{ values[6] }} {{ values[7] }} {{ values[8] }} {{ values[9] }}"
+
+
+# Start mocked clusters
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  tasks:
+    - name: Start mocked clusters
+      kubernetes.core.k8s:
+        state: present
+        src: ~/cymba/cmd/mock/mockclusters.yaml
+
+
+# Scaling the number of clusters
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  vars:
+    num_replicas: 1
+  roles:
+    - ocm/cluster-scale
+
+
+# tasks for the (virtual) hub to accept join request
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  tasks:
+    - name: Change to vks1 (TEMPORARY FIX)
+      shell: kubectl config use-context vks1
+
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  roles:
+    - ocm/cluster-join

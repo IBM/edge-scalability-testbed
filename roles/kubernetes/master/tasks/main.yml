@@ -22,6 +22,25 @@
 
 - name: install Pod network
   become: yes
-  shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml 
+  shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml 
   args:
     chdir: $HOME
+
+- name: Copy install PV provisioner yaml file
+  become: yes
+  copy:
+    src: "{{ role_path }}/files/local-path-storage.yaml"
+    dest: /tmp/local-path-storage.yaml 
+
+
+- name: install PV provisioner
+  become: yes
+  shell: |
+         kubectl apply -f /tmp/local-path-storage.yaml
+         kubectl patch storageclass standard -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+  args:
+    chdir: $HOME
+
+
+
+
