@@ -4,7 +4,7 @@
   become: yes
   gather_facts: yes
   vars:
-    node_name_list: [ip-172-31-34-147, ip-172-31-44-50]
+    node_name_list: [ip-172-31-33-156]
   roles:
     - kubernetes/commons/delete-node
 
