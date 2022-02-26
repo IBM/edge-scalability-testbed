@@ -1,3 +1,2 @@
 ---
 # defaults file for ec2instance_data
-data_file: .data/ec2_instances.json

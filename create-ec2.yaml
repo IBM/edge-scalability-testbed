@@ -8,6 +8,9 @@
     instance_type: t2.xlarge
 
   tasks:
+  - fail: msg="cluster_name is required"
+    when: cluster_name is undefined
+
   - name: Get public IP address of the host of Ansible engine
     shell: curl ifconfig.me
     register: my_public_ip
@@ -48,7 +51,7 @@
   - name: Persist instance data
     ansible.builtin.copy:
       content: "{{ ec2_instances | to_nice_json }}"
-      dest: .data/ec2_instances.json
+      dest: ".data/ec2_instances_{{ cluster_name }}.json"
 
   - name: Assign IPs for k8s masters and workers
     split_ips:
