@@ -2,7 +2,7 @@
 - hosts: localhost
   gather_facts: no
   vars:
-    region: us-east-2
+    region: us-east-1
     masters: 1
     workers: 1
     instance_type: t2.xlarge
@@ -27,7 +27,7 @@
         - proto: -1
           ports: -1
           group_name: ec2nodes
-    diff: true
+    diff: false
 
   - name: Create EC2 instances
     include_role: name=ec2instances
