@@ -55,6 +55,7 @@
 
   - name: Assign IPs for k8s masters and workers
     split_ips:
+      cluster_name: "{{ cluster_name }}"
       public_ips: "{{ public_ips }}"
       position: "{{ masters }}"
     register: split

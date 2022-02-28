@@ -3,19 +3,21 @@ from ansible.module_utils.basic import *
 def main():
 
     fields = {
+        "cluster_name": {"required": True, "type": "str"},
         "public_ips": {"required": True, "type": "list"},
         "position": {"required": True, "type": "int"},
     }
 
     module = AnsibleModule(argument_spec=fields)
 
+    cluster_name = module.params["cluster_name"]
     public_ips = module.params["public_ips"]
     position = module.params["position"]
     master_public_ips = public_ips[:position]
     worker_public_ips = public_ips[position:]
 
 
-    fout = open('.data/hosts', 'w') # output ansible hosts file with ec2 public ip addresses
+    fout = open('_'.join(['.data/hosts', cluster_name]), 'w') # output ansible hosts file with ec2 public ip addresses
     fout.write('[masters]' + "\n")
 
     i=1
