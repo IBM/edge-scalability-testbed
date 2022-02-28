@@ -33,7 +33,7 @@
     include_role: name=ec2instances
     vars:
       verb: create
-      count: "{{ masters + workers }}"
+      count: "{{ masters | int + workers | int }}"
 
   - name: Show instance data
     debug:
@@ -57,7 +57,7 @@
     split_ips:
       cluster_name: "{{ cluster_name }}"
       public_ips: "{{ public_ips }}"
-      position: "{{ masters }}"
+      position: "{{ masters | int }}"
     register: split
   - debug:
       var: split
