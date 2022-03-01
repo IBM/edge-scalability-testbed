@@ -1,0 +1,24 @@
+---
+- hosts: masters
+  remote_user: ubuntu
+  become: true
+  gather_facts: yes
+  connection: ssh
+  vars:
+    vhub_name: "{{ hub_name }}"
+  environment:
+    PATH: "{{ ansible_env.PATH }}:/root/kealm/deploy"
+  tasks:
+    - name: Create virtual hub {{ vhub_name }}
+      shell: yes | yes | kubectl vh create {{ vhub_name }}
+
+    - name: Wait for the virtual hub job to complete
+      shell: kubectl wait --for=condition=complete --timeout=600s job/{{ vhub_name }}-job
+
+    - name: wait for pods to come up
+      shell: kubectl -n {{ vhub_name }}-system get pods -o json
+      register: kubectl_get_pods
+      until: kubectl_get_pods.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+
+    - name: Define the context for the new virtual hub
+      shell: yes | kubectl vh merge-kubeconfig {{ vhub_name }}
