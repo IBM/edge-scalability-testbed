@@ -1,5 +1,5 @@
 
-Install required packages to Ansible Control Node
+# Install required packages to Ansible Control Node
 - hosts: localhost
   remote_user: ubuntu
   become: yes
@@ -42,7 +42,7 @@ Install required packages to Ansible Control Node
 
 
 # Initialize mock environment
-- hosts: masters
+- hosts: masters # of the "hub" inventory?
   remote_user: ubuntu
   become: yes
   vars:
@@ -59,7 +59,7 @@ Install required packages to Ansible Control Node
       register: remote_content_values
 
 
-- hosts: masters
+- hosts: masters # of the "managed" inventory?
   remote_user: ubuntu
   become: yes
   vars:
@@ -98,7 +98,7 @@ Install required packages to Ansible Control Node
 
 
 # tasks for the (virtual) hub to accept join request
-- hosts: masters
+- hosts: masters # of the "hub" inventory?
   remote_user: ubuntu
   become: yes
   tasks:
