@@ -22,3 +22,12 @@
 
     - name: Define the context for the new virtual hub
       shell: yes | kubectl vh merge-kubeconfig {{ vhub_name }}
+
+    - name: Get the token to register managed clusters
+      become: yes
+      shell: kubectl -n {{ vhub_name }}-system get configmaps join-command -o yaml
+      register: mockcluster_join_command
+
+    - name: Copy join command to local file (Ansible control node)
+      become: yes
+      local_action: copy content="{{ mockcluster_join_command.stdout_lines[3] }}" dest="/tmp/mockcluster_join_command" mode=0777

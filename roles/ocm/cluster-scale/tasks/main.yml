@@ -3,7 +3,7 @@
 - name: Scaling the number of clusters
   kubernetes.core.k8s_scale:
     api_version: apps/v1
-    kind: statefulsets
+    kind: deploy
     name: mockcluster
     namespace: open-cluster-management-agent
     replicas: '{{ num_replicas }}'

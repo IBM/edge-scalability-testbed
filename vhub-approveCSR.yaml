@@ -1,0 +1,9 @@
+# tasks for the (virtual) hub to accept join request
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  pre_tasks:
+    - name: Change to vks1
+      shell: kubectl config use-context vks1
+  roles:
+    - ocm/cluster-join
