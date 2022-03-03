@@ -7,3 +7,4 @@
     name: mockcluster
     namespace: open-cluster-management-agent
     replicas: '{{ num_replicas }}'
+    wait_timeout: 60
