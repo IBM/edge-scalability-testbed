@@ -1,0 +1,8 @@
+# Scaling the number of clusters
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  vars:
+    num_replicas: "{{ num_replicas }}"
+  roles:
+    - ocm/cluster-scale
