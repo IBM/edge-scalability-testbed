@@ -11,7 +11,7 @@
 
 
 # Install required packages to the mockcluster node
-- hosts: hosts_hub/masters
+- hosts: masters
   remote_user: ubuntu
   become: yes
   tasks:
