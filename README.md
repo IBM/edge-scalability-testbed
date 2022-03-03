@@ -46,7 +46,7 @@ ansible-playbook -i .data/hosts_managed scale-mockclusters.yaml -e "num_replicas
 ansible-playbook -i .data/hosts_hub vhub-approveCSR.yaml 
 ```
 
-4. (Optional) Delete worker nodes from the cluster.
+8. (Optional) Delete worker nodes from the cluster.
 Edit `.data/hosts_hub` by adding the corresponding entries in the `[remove_workers]` Ansible inventory group.
 Edit `delete-worker.yaml` by changing the `node_name`, which is shown by `kubectl get nodes`.
 Run the playbook:
@@ -54,7 +54,7 @@ Run the playbook:
 ansible-playbook -i .data/hosts_hub delete-worker.yaml
 ```
 
-5. Destroy the infrastructure.
+9. Destroy the infrastructure.
 ```
 ansible-playbook delete-ec2.yaml -e cluster_name=hub
 ```
