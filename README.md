@@ -1,8 +1,17 @@
 Homemade Ansible automation for k8s nodes on AWS EC2
 ----------------------------------------------------
 
+### Overview
+A very high level overview of the automated components is [here](overview.txt).
+
 ### Requirements
 Requirement of the `ec2instances` role is specified in its [README](roles/ec2instances/README.md).
+
+### Quick Start
+A one-click bootstrapping of all the [components](overview.txt) can be done by running
+```shell
+./all-in-one.sh
+```
 
 ### Example Usage
 1. Create the infrastructure including a security group and EC2 instances on AWS.
