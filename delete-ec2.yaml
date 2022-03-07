@@ -35,3 +35,4 @@
       region: "{{ region }}"
       name: ec2nodes
       state: absent
+    failed_when: false
