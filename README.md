@@ -13,7 +13,9 @@ A one-click bootstrapping of all the [components](overview.txt) can be done by r
 ./all-in-one.sh
 ```
 
-### Example Usage
+### Examples of Individual Steps
+As an alternative to the one-click bootstrapping, we can also run the individual steps as follows.
+
 1. Create the infrastructure including a security group and EC2 instances on AWS.
 EC2 region, numbers of master nodes and worker nodes, and instance type can be specified in playbook `vars`.
 ```
