@@ -1,4 +1,7 @@
 ---
+- name: Wait for target connection to become reachable/usable
+  wait_for_connection:
+
 - name: install Docker
   shell: |
          sudo apt-get update
