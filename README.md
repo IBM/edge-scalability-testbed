@@ -1,5 +1,5 @@
-Homemade Ansible automation for k8s nodes on AWS EC2
-----------------------------------------------------
+Ansible automation for k8s-based edge testbed on AWS EC2
+--------------------------------------------------------
 
 ### Overview
 A very high level overview of the automated components is [here](overview.txt).
