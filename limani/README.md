@@ -12,4 +12,4 @@ With these, in the root directory of this project, run the following command:
 ansible-playbook -i .data/<host-file-of-the-underlying-cluster-nodes> limani/bootstrap.yaml -e "github_token=<github-credential> img_registry=<somewhere> img_registry_pswd=<random-password>"
 ```
 
-An one-click, end-to-end example is shown [here](../all-in-one-limani.yaml).
+An one-click, end-to-end example is shown [here](../all-in-one-limani.sh).
