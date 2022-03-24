@@ -1,0 +1,165 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    region: "us-east-2"
+    cluster_name: "agent-demo-cloud"
+    task_name: "agent-tasks"
+    vpc_name: "agent-pvc"
+  tasks:
+    # Constructing the VPC and subnets
+    - name: Create VPC
+      amazon.aws.ec2_vpc_net:
+        name:           "{{ vpc_name }}"
+        cidr_block:     '192.156.0.0/16'
+        region:          "{{ region }}"
+      register: result_vpc
+
+    - name: Print the Create VPC
+      ansible.builtin.debug:
+        msg: "{{ result_vpc.vpc.id }}"
+
+    - name: Create public subnet
+      amazon.aws.ec2_vpc_subnet:
+        state:            'present'
+        vpc_id:           "{{ result_vpc.vpc.id }}"
+        cidr:             '192.156.1.0/24'
+        az:               'us-east-2a'
+        region:           "{{ region }}"
+        map_public:       yes
+      register: result_public_subnet
+
+
+    - name: Debug Public Subnet
+      ansible.builtin.debug:
+        msg: "{{ result_public_subnet }}"
+
+    - name: Create private subnet
+      amazon.aws.ec2_vpc_subnet:
+        state:            'present'
+        vpc_id:           "{{ result_vpc.vpc.id }}"
+        cidr:             '192.156.2.0/24'
+        az:               'us-east-2c'
+        region:           "{{ region }}"
+        map_public:       no
+      register: result_private_subnet
+
+    - name: Debug Private Subnet
+      ansible.builtin.debug:
+        msg: "{{ result_private_subnet }}"
+
+
+    # Construct the gateways
+    - name: Create Internet Gateway for VPC
+      amazon.aws.ec2_vpc_igw:
+        state:           'present'
+        vpc_id:          "{{ result_vpc.vpc.id }}"
+        region:          "{{ region }}"
+      register: result_igw
+
+
+    - name: Create NAT Gateway
+      amazon.aws.ec2_vpc_nat_gateway:
+        state:                  'present'
+        subnet_id:              "{{ result_public_subnet.subnet.id }}"
+        wait:                   yes
+        if_exist_do_not_create: true
+        release_eip:            true
+      register: result_nat_gateway
+
+
+    # Create the routing tables
+    - name: Set up the public subnet route table
+      ec2_vpc_route_table:
+        vpc_id:           "{{ result_vpc.vpc.id }}"
+        region:           "{{ region }}"
+        subnets:          "{{ result_public_subnet.subnet.id }}"
+        routes:
+        - dest:         '0.0.0.0/0'
+          gateway_id:   "{{ result_igw.gateway_id }}"
+      register: result_public_route
+
+    - name: Set up private subnet route table
+      ec2_vpc_route_table:
+        vpc_id:           "{{ result_vpc.vpc.id }}"
+        region:           "{{ region }}"
+        subnets:          "{{ result_private_subnet.subnet.id }}"
+        routes:
+        - dest:         '0.0.0.0/0'
+          gateway_id:   "{{ result_nat_gateway.nat_gateway_id }}"
+      register: result_private_route
+
+
+    - name: Creating security group rule descriptions
+      amazon.aws.ec2_group:
+        name: "{{ task_name }}-securityGroup"
+        description: "sg for ecs task {{ task_name }}"
+        vpc_id:  "{{ result_vpc.vpc.id }}"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            ports:
+            - 80
+            cidr_ip: 0.0.0.0/0
+            rule_desc: allow all on port 80
+      register: result_sg
+
+    - name: Debug security group
+      ansible.builtin.debug:
+        msg: "{{ result_sg.group_id }}"
+
+
+#####################################################
+    - name: Create a log group
+      community.aws.cloudwatchlogs_log_group:
+        log_group_name: "{{ task_name }}"
+
+    - name: Cluster creation
+      community.aws.ecs_cluster:
+        name: "{{ cluster_name }}"
+        state: present
+        region: "{{ region }}"
+
+    - name: Create task definition
+      community.aws.ecs_taskdefinition:
+        family: "{{ task_name }}"
+        containers:
+        - name: nginx
+          essential: true
+          image: "nginx:latest"
+          portMappings:
+          - containerPort: 80
+            hostPort: 80
+            protocol: "tcp"
+          cpu: 256
+          memoryReservation: 512
+          logConfiguration:
+            logDriver: awslogs
+            options:
+              awslogs-group: "{{ task_name }}"
+              awslogs-region: "{{ region }}"
+              # awslogs-create-group: "true"
+              awslogs-stream-prefix: ecs
+        launch_type: FARGATE
+        cpu: "256"
+        memory: "512"
+        state: present
+        network_mode: awsvpc
+        execution_role_arn: ecsTaskExecutionRole
+
+    # Basic provisioning example
+    - name: Provisioning ECS Service
+      community.aws.ecs_service:
+        state: present
+        region: "{{ region }}"
+        name: "{{ task_name }}-braulio-second"
+        cluster:  "{{ cluster_name }}"
+        task_definition: "{{ task_name }}"
+        desired_count: 10
+        launch_type: FARGATE
+        network_configuration:
+          assign_public_ip: no
+          subnets:
+          - "{{ result_private_subnet.subnet.id }}"
+          security_groups:
+          - "{{ result_sg.group_id }}"

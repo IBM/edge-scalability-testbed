@@ -1,0 +1,197 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    region: "us-east-2"
+    cluster_name: "device-demo-cloud"
+    task_name: "device-task"
+    vpc_name: "device-pvc"
+  tasks:
+    # Constructing the VPC and subnets
+    - name: Create VPC
+      amazon.aws.ec2_vpc_net:
+        name:           "{{ vpc_name }}"
+        cidr_block:     '192.170.0.0/16'
+        region:         "{{ region }}"
+      register: result_vpc
+
+    - name: Print the Create VPC
+      ansible.builtin.debug:
+        msg: "{{ result_vpc.vpc.id }}"
+
+    - name: Create public subnet
+      amazon.aws.ec2_vpc_subnet:
+        state:            'present'
+        vpc_id:           "{{ result_vpc.vpc.id }}"
+        cidr:             '192.170.1.0/24'
+        az:               'us-east-2a'
+        region:           "{{ region }}"
+        map_public:       yes
+      register: result_public_subnet
+
+    - name: Debug Public Subnet
+      ansible.builtin.debug:
+        msg: "{{ result_public_subnet }}"
+
+
+    - name: Create private subnet
+      amazon.aws.ec2_vpc_subnet:
+        state:            'present'
+        vpc_id:           "{{ result_vpc.vpc.id }}"
+        cidr:             '192.170.2.0/24'
+        az:               'us-east-2c'
+        region:           "{{ region }}"
+        map_public:       no
+      register: result_private_subnet
+
+    - name: Debug Private Subnet
+      ansible.builtin.debug:
+        msg: "{{ result_private_subnet }}"
+
+
+    # Construct the gateways
+    - name: Create Internet Gateway for VPC
+      amazon.aws.ec2_vpc_igw:
+        state:           'present'
+        vpc_id:          "{{ result_vpc.vpc.id }}"
+        region:          "{{ region }}"
+      register: result_igw
+
+
+     # Create the routing tables
+    - name: Set up the public subnet route table
+      ec2_vpc_route_table:
+        vpc_id:           "{{ result_vpc.vpc.id }}"
+        region:           "{{ region }}"
+        subnets:          "{{ result_public_subnet.subnet.id }}"
+        routes:
+        - dest:         '0.0.0.0/0'
+          gateway_id:   "{{ result_igw.gateway_id }}"
+      register: result_public_route
+
+    - name: Creating security group rule descriptions
+      amazon.aws.ec2_group:
+        name: "{{ task_name }}-securityGroup"
+        description: "sg for ecs task {{ task_name }}"
+        vpc_id:  "{{ result_vpc.vpc.id }}"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            ports:
+            - 80
+            cidr_ip: 0.0.0.0/0
+            rule_desc: allow all on port 80
+      register: result_sg
+
+    - name: Debug security group
+      ansible.builtin.debug:
+        msg: "{{ result_sg.group_id }}"
+
+
+  #####################################################
+    # - name: allocate a new elastic IP inside a VPC
+    #   ec2_eip:
+    #     region: "{{ region }}"
+    #     in_vpc: yes
+    #   register: eip
+
+    # - name: output the IP
+    #   debug:
+    #     msg: "Allocated IP inside a VPC is {{ eip.public_ip }}"
+
+    - name: Create a target group with a default health check
+      community.aws.elb_target_group:
+        name: "{{ task_name }}-targetGroup"
+        protocol: tcp
+        target_type: ip
+        port: 80
+        vpc_id:  "{{ result_vpc.vpc.id }}"
+        state: present
+      register: target_group_output
+
+
+    - name: Debug Message Target Group
+      ansible.builtin.debug:
+        msg: "{{ target_group_output.target_group_arn}}"
+
+
+    - name: Create an ELB with an attached Elastic IP address
+      community.aws.elb_network_lb:
+        name: "{{ task_name }}-elb-network"
+        subnets:
+          -  "{{ result_public_subnet.subnet.id }}"
+          -  "{{ result_private_subnet.subnet.id }}"
+        listeners:
+          - Protocol: TCP # Required. The protocol for connections from clients to the load balancer (TCP, TLS, UDP or TCP_UDP) (case-sensitive).
+            Port: 80 # Required. The port on which the load balancer is listening.
+            DefaultActions:
+              - Type: forward # Required. Only 'forward' is accepted at this time
+                TargetGroupName: "{{ task_name }}-targetGroup" # Required. The name of the target group
+        state: present 
+        scheme: internet-facing
+        wait: yes
+      register: elb_network_output
+
+    - name: Debug Message for ELB
+      ansible.builtin.debug:
+        msg: "{{ elb_network_output }}"
+
+
+#####################################################
+    - name: Create a log group
+      community.aws.cloudwatchlogs_log_group:
+        log_group_name: "{{ task_name }}"
+
+    - name: Cluster creation
+      community.aws.ecs_cluster:
+        name: "{{ cluster_name }}"
+        state: present
+        region: "{{ region }}"
+
+    - name: Create task definition
+      community.aws.ecs_taskdefinition:
+        family: "{{ task_name }}"
+        containers:
+        - name: nginx
+          essential: true
+          image: "nginx:latest"
+          portMappings:
+          - containerPort: 80
+            hostPort: 80
+            protocol: "tcp"
+          cpu: 256
+          memoryReservation: 512
+          logConfiguration:
+            logDriver: awslogs
+            options:
+              awslogs-group: "{{ task_name }}"
+              awslogs-region: "{{ region }}"
+              # awslogs-create-group: "true"
+              awslogs-stream-prefix: ecs
+        launch_type: FARGATE
+        cpu: "256"
+        memory: "512"
+        state: present
+        network_mode: awsvpc
+        execution_role_arn: ecsTaskExecutionRole
+
+    # Basic provisioning example
+    - name: Provisioning ECS Service
+      community.aws.ecs_service:
+        state: present
+        region: "{{ region }}"
+        name: "{{ task_name }}-braulio-second"
+        cluster:  "{{ cluster_name }}"
+        task_definition: "{{ task_name }}"
+        desired_count: 2
+        launch_type: FARGATE
+        load_balancers:
+          - targetGroupArn: "{{ target_group_output.target_group_arn}}"
+            containerName:  nginx
+            containerPort: 80
+        network_configuration:
+          assign_public_ip: yes
+          subnets:
+          - "{{ result_public_subnet.subnet.id }}"
+          security_groups:
+          - "{{ result_sg.group_id }}"
