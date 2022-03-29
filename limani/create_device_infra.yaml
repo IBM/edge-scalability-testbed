@@ -3,9 +3,14 @@
   gather_facts: no
   vars:
     region: "us-east-2"
+    availability_zone: 'us-east-2a'
     cluster_name: "device-demo-cloud"
     task_name: "device-task"
     vpc_name: "device-pvc"
+    container_name: nginx
+    container_image: "nginx:latest"
+    num_replicas: 2
+    port_num: 80
   tasks:
     # Constructing the VPC and subnets
     - name: Create VPC
@@ -17,14 +22,14 @@
 
     - name: Print the Create VPC
       ansible.builtin.debug:
-        msg: "{{ result_vpc.vpc.id }}"
+        msg: "{{ result_vpc }}"
 
     - name: Create public subnet
       amazon.aws.ec2_vpc_subnet:
         state:            'present'
         vpc_id:           "{{ result_vpc.vpc.id }}"
         cidr:             '192.170.1.0/24'
-        az:               'us-east-2a'
+        az:               "{{ availability_zone }}"
         region:           "{{ region }}"
         map_public:       yes
       register: result_public_subnet
@@ -39,7 +44,7 @@
         state:            'present'
         vpc_id:           "{{ result_vpc.vpc.id }}"
         cidr:             '192.170.2.0/24'
-        az:               'us-east-2c'
+        az:               "us-east-2c"
         region:           "{{ region }}"
         map_public:       no
       register: result_private_subnet
@@ -58,7 +63,27 @@
       register: result_igw
 
 
-     # Create the routing tables
+    - name: Debug Internet Gateway 
+      ansible.builtin.debug:
+        msg: "{{ result_igw }}"
+
+
+    - name: Create NAT Gateway
+      amazon.aws.ec2_vpc_nat_gateway:
+        state:                  'present'
+        subnet_id:              "{{ result_public_subnet.subnet.id }}"
+        wait:                   yes
+        if_exist_do_not_create: true
+        release_eip:            true
+      register: result_nat_gateway
+
+
+    - name: Debug NAT Gateway
+      ansible.builtin.debug:
+        msg: "{{ result_nat_gateway }}"
+
+
+    # Create the routing tables
     - name: Set up the public subnet route table
       ec2_vpc_route_table:
         vpc_id:           "{{ result_vpc.vpc.id }}"
@@ -69,6 +94,28 @@
           gateway_id:   "{{ result_igw.gateway_id }}"
       register: result_public_route
 
+
+    - name: Debug Public Subnet Route Table
+      ansible.builtin.debug:
+        msg: "{{ result_public_route }}"
+
+
+    - name: Set up private subnet route table
+      ec2_vpc_route_table:
+        vpc_id:           "{{ result_vpc.vpc.id }}"
+        region:           "{{ region }}"
+        subnets:          "{{ result_private_subnet.subnet.id }}"
+        routes:
+        - dest:         '0.0.0.0/0'
+          gateway_id:   "{{ result_nat_gateway.nat_gateway_id }}"
+      register: result_private_route
+
+
+    - name: Debug Private Subnet Route Table
+      ansible.builtin.debug:
+        msg: "{{ result_private_route }}"
+
+
     - name: Creating security group rule descriptions
       amazon.aws.ec2_group:
         name: "{{ task_name }}-securityGroup"
@@ -78,14 +125,14 @@
         rules:
           - proto: tcp
             ports:
-            - 80
+            - "{{ port_num }}"
             cidr_ip: 0.0.0.0/0
             rule_desc: allow all on port 80
       register: result_sg
 
-    - name: Debug security group
+    - name: Debug Security Group
       ansible.builtin.debug:
-        msg: "{{ result_sg.group_id }}"
+        msg: "{{ result_sg }}"
 
 
   #####################################################
@@ -104,7 +151,7 @@
         name: "{{ task_name }}-targetGroup"
         protocol: tcp
         target_type: ip
-        port: 80
+        port: "{{ port_num }}"
         vpc_id:  "{{ result_vpc.vpc.id }}"
         state: present
       register: target_group_output
@@ -123,7 +170,7 @@
           -  "{{ result_private_subnet.subnet.id }}"
         listeners:
           - Protocol: TCP # Required. The protocol for connections from clients to the load balancer (TCP, TLS, UDP or TCP_UDP) (case-sensitive).
-            Port: 80 # Required. The port on which the load balancer is listening.
+            Port: "{{ port_num }}" # Required. The port on which the load balancer is listening.
             DefaultActions:
               - Type: forward # Required. Only 'forward' is accepted at this time
                 TargetGroupName: "{{ task_name }}-targetGroup" # Required. The name of the target group
@@ -152,12 +199,12 @@
       community.aws.ecs_taskdefinition:
         family: "{{ task_name }}"
         containers:
-        - name: nginx
+        - name: "{{ container_name }}"
           essential: true
-          image: "nginx:latest"
+          image: "{{ container_image }}"
           portMappings:
-          - containerPort: 80
-            hostPort: 80
+          - containerPort: "{{ port_num }}"
+            hostPort: "{{ port_num }}"
             protocol: "tcp"
           cpu: 256
           memoryReservation: 512
@@ -174,6 +221,12 @@
         state: present
         network_mode: awsvpc
         execution_role_arn: ecsTaskExecutionRole
+      register: task_definition_output
+
+
+    - name: Debug Task Definition
+      ansible.builtin.debug:
+        msg: "{{ task_definition_output }}"
 
     # Basic provisioning example
     - name: Provisioning ECS Service
@@ -183,15 +236,25 @@
         name: "{{ task_name }}-braulio-second"
         cluster:  "{{ cluster_name }}"
         task_definition: "{{ task_name }}"
-        desired_count: 2
+        desired_count: "{{ num_replicas }}"
         launch_type: FARGATE
         load_balancers:
           - targetGroupArn: "{{ target_group_output.target_group_arn}}"
-            containerName:  nginx
-            containerPort: 80
+            containerName:  "{{ container_name }}"
+            containerPort: "{{ port_num }}"
         network_configuration:
           assign_public_ip: yes
           subnets:
           - "{{ result_public_subnet.subnet.id }}"
           security_groups:
           - "{{ result_sg.group_id }}"
+      register: ecs_service_output
+
+    - name: Debug ECS Service
+      ansible.builtin.debug:
+        msg: "{{ ecs_service_output }}" 
+
+    - name: Create vars file to help with deletion of resources
+      ansible.builtin.copy:
+        content: "cluster_name: {{ cluster_name }}\ntask_name: {{ task_name }}\nvpc_name: {{ vpc_name }}\nvpc_id: {{ result_vpc.vpc.id }}\nvpc_cidr_block: {{ result_vpc.vpc.cidr_block}}\ntargetGroupArn: {{ target_group_output.target_group_arn}}\ncontainerName: {{ container_name }}\ncontainerPort: {{ port_num }}\npublic_subnet_id: {{ result_public_subnet.subnet.id }}\nnat_id: {{ result_nat_gateway.nat_gateway_id }}\nsg_id: {{ result_sg.group_id }}\nroute_table_list: [{{ result_public_route.route_table.route_table_id }}, {{ result_private_route.route_table.route_table_id }}]\ncidr_list: [{{ result_public_subnet.subnet.cidr_block }}, {{ result_private_subnet.subnet.cidr_block }}]\nendpoint_arn: {{ elb_network_output.load_balancer_arn }}"
+        dest: "{{ region }}_device_helper_vars.yaml"
