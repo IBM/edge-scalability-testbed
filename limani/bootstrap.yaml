@@ -112,10 +112,16 @@
         executable: /bin/bash
         chdir: /root/limani/
 
-    - name: Create example CRs
+    - name: Create examples for configspec and devicegroup
       shell: |
         kubectl apply -f deploy/cr-samples/edge_v1alpha1_configspec.yaml
         kubectl apply -f deploy/cr-samples/edge_v1alpha1_devicegroup.yaml
+      args:
+        chdir: /root/limani/
+
+    - name: Create an example for inventorydevice
+      shell: |
+        deploy/mk-device.sh foo devicegroup-sample
       args:
         chdir: /root/limani/
 
@@ -149,7 +155,7 @@
         ./aws/install
 
     - name: Configure aws CLI
-      shell: aws configure set {{ item.key }} {{ item.value }} # --profile {{ aws_profile }}
+      shell: aws configure set {{ item.key }} {{ item.value }}
       no_log: True
       with_dict:
         aws_access_key_id: "dummy"
@@ -171,11 +177,11 @@
       debug:
         var: dynamodb_tables.stdout
 
-    - name: Scan the 'devices' table to show status update
+    - name: Scan the 'deviceConfigStatuses' table to show status update
       shell: |
-        aws dynamodb scan --table-name devices --endpoint-url http://{{ dynamodb_svc_clusterip.stdout }}:8000 --region ""
-      register: devices_scanned
+        aws dynamodb scan --table-name deviceConfigStatuses --endpoint-url http://{{ dynamodb_svc_clusterip.stdout }}:8000 --region ""
+      register: deviceConfigStatuses_scanned
 
-    - name: Show the scanned 'devices' table
+    - name: Show the scanned table
       debug:
-        var: devices_scanned.stdout
+        var: deviceConfigStatuses_scanned.stdout
