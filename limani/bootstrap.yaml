@@ -98,12 +98,24 @@
       args:
         chdir: /root/limani/
 
-    - name: Deploy limani controllers and device server
+    - name: Deploy limani controllers, limani device server, and Dynamodb Local
       shell: |
         export PATH=$PATH:/usr/local/go/bin
         make deploy IMG_REGISTRY={{ img_registry }}
       args:
         chdir: /root/limani/
+      when: place is undefined
+
+    - name: Deploy limani controllers, limani device server, and Dynamodb
+      shell: |
+        export PATH=$PATH:/usr/local/go/bin
+        export AWS_ACCESS_KEY={{ aws_access_key }}
+        export AWS_SECRET_KEY={{ aws_secret_key }}
+        export AWS_REGION={{ aws_region }}
+        make deploy IMG_REGISTRY={{ img_registry }} PLACE={{ place }}
+      args:
+        chdir: /root/limani/
+      when: place is defined
 
     - name: Generate cert for agent
       shell: |
@@ -149,8 +161,9 @@
         rm -f /usr/local/bin/aws
         rm -f /usr/local/bin/aws_completer
         rm -rf /usr/local/aws-cli
+        rm -rf ./aws
+        rm -f awscliv2.zip
         curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        rm -rf aws
         unzip awscliv2.zip
         ./aws/install
 
@@ -167,21 +180,26 @@
       shell: |
         kubectl -n limani-system get svc limani-dynamodb -ojsonpath="{.spec.clusterIPs[0]}"
       register: dynamodb_svc_clusterip
+      when: place is undefined
 
     - name: List dynamodb tables
       shell: |
         aws dynamodb list-tables --endpoint-url http://{{ dynamodb_svc_clusterip.stdout }}:8000 --region ""
       register: dynamodb_tables
+      when: place is undefined
     
     - name: Show dynamodb tables
       debug:
         var: dynamodb_tables.stdout
+      when: place is undefined
 
     - name: Scan the 'deviceConfigStatuses' table to show status update
       shell: |
         aws dynamodb scan --table-name deviceConfigStatuses --endpoint-url http://{{ dynamodb_svc_clusterip.stdout }}:8000 --region ""
       register: deviceConfigStatuses_scanned
+      when: place is undefined
 
     - name: Show the scanned table
       debug:
         var: deviceConfigStatuses_scanned.stdout
+      when: place is undefined
