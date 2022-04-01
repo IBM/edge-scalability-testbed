@@ -2,7 +2,7 @@
 
 set -x
 
-ansible-playbook create-ec2.yaml -e "cluster_name=limani"
+ansible-playbook create-ec2.yaml -e "cluster_name=limani instance_type=t2.2xlarge"
 ansible-playbook -i .data/hosts_limani deploy-master.yaml
 ansible-playbook -i .data/hosts_limani deploy-worker.yaml
 
