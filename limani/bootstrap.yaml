@@ -171,9 +171,9 @@
       shell: aws configure set {{ item.key }} {{ item.value }}
       no_log: True
       with_dict:
-        aws_access_key_id: "dummy"
-        aws_secret_access_key: "dummy"
-        region: "us-east-1"
+        aws_access_key_id: "{{ aws_access_key | default('dummy') }}"
+        aws_secret_access_key: "{{ aws_secret_key | default('dummy') }}"
+        region: "{{ aws_region | default('us-east-1') }}"
         format: "json"
 
     - name: Find the dynamodb services' clusterIP
