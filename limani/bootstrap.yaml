@@ -76,6 +76,7 @@
       ansible.builtin.fetch:
         src: /root/limani/pki.tgz
         dest: /tmp/pki.tgz
+        flat: true
 
     - name: Remove pki pack
       ansible.builtin.file:
