@@ -1,0 +1,56 @@
+---
+- name: Change mode for credentials
+  file:
+    path: /root/limani/hack/pki/ca/ca.crt
+    mode: 0644
+
+- name: Change mode for credentials
+  file:
+    path: /root/limani/hack/pki/ca/private/ca.key
+    mode: 0644
+
+- name: Change mode for credentials
+  file:
+    path: /root/limani/hack/pki/ca/issued/server.crt
+    mode: 0644
+
+- name: Change mode for credentials
+  file:
+    path: /root/limani/hack/pki/ca/private/server.key
+    mode: 0644
+
+- name: Copy Dockerfile for the credentials container image
+  ansible.builtin.copy:
+    src: Dockerfile_Credentials
+    dest: /root/limani/deploy/Dockerfile_Credentials
+
+- name: Prepare the backend cluster's kubeconfig file for the credentials container image
+  shell: |
+    cp /root/.kube/config /root/limani/kube.conf
+
+- name: Get AWS account ID
+  shell: |
+    aws sts get-caller-identity --query "Account" --output text
+  register: aws_account_id
+
+- name: Build the credentials container image
+  shell: |
+    docker build -t {{ aws_account_id.stdout }}.dkr.ecr.{{ region }}.amazonaws.com/limani/credentials -f deploy/Dockerfile_Credentials .
+  args:
+    chdir: /root/limani/
+
+- name: Cleanup the backend cluster's kubeconfig file after building the credentials container image
+  shell: |
+    rm -f /root/limani/kube.conf
+
+- name: Login AWS ECR
+  shell: |
+    aws ecr get-login-password --region {{ region }} | docker login --username AWS --password-stdin {{ aws_account_id.stdout }}.dkr.ecr.{{ region }}.amazonaws.com
+
+- name: Create Repo for the credentials container image on AWS ECR
+  shell: |
+    aws ecr create-repository --repository-name limani/credentials --region {{ region }} 2>/dev/null | true
+
+- name: Push the credentials container image to AWS ECR
+  shell: |
+    docker push {{ aws_account_id.stdout }}.dkr.ecr.{{ region }}.amazonaws.com/limani/credentials
