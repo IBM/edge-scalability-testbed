@@ -66,6 +66,22 @@
       args:
         chdir: /root/limani/
 
+    - name: Pack pki
+      shell: |
+        tar czf pki.tgz hack/pki/
+      args:
+        chdir: /root/limani/
+
+    - name: Fetch pki
+      ansible.builtin.fetch:
+        src: /root/limani/pki.tgz
+        dest: /tmp/pki.tgz
+
+    - name: Remove pki pack
+      ansible.builtin.file:
+        path: /root/limani/pki.tgz
+        state: absent
+
     - name: Install controller-gen
       shell: |
         export PATH=$PATH:/usr/local/go/bin
