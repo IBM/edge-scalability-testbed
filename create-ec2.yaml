@@ -2,10 +2,12 @@
 - hosts: localhost
   gather_facts: no
   vars:
-    region: us-east-1
+    region: us-east-2
     masters: 1
     workers: 1
-    instance_type: t2.xlarge
+    instance_type: t2.2xlarge
+    default_vpc: yes
+    default_vpc_az: "us-east-2b"
 
   tasks:
   - fail: msg="cluster_name is required"
@@ -15,11 +17,42 @@
     shell: curl ifconfig.me
     register: my_public_ip
 
+  - name: Get facts about default VPC
+    amazon.aws.ec2_vpc_net_info:
+      region: "{{ region }}"
+      filters:
+        "isDefault": yes
+    register: vpc_info
+    when: default_vpc | bool
+
+  - name: Set vpc_id facts for the default VPC
+    set_fact: 
+      vpc_id: "{{ vpc_info.vpcs[0].vpc_id }}"
+    when: default_vpc | bool    
+
+  - name: Get facts for public subnet associated with selected availability zone and default VPC
+    amazon.aws.ec2_vpc_subnet_info:
+      filters:
+        vpc-id: "{{ vpc_id }}"
+        availability-zone: "{{ default_vpc_az }}"
+    register: subnets_info
+    when: default_vpc | bool  
+
+  - name: Read VPC configuration data
+    include_vars: ".data/{{ region }}_vpc_helper_vars.yaml"
+    when: not default_vpc
+
+  - name: Set subnet id fact for default VPC
+    set_fact: 
+      public_subnet_id: "{{ subnets_info.subnets[0].id }}" 
+    when: default_vpc | bool  
+
   - name: Create security group
     amazon.aws.ec2_group:
-      name: ec2nodes
+      name: Braulioec2nodes
       description: Used for Ansible automation
       region: "{{ region }}"
+      vpc_id: "{{ vpc_id }}"
       rules:
         - proto: tcp
           ports: 22
@@ -29,14 +62,15 @@
           cidr_ip: "{{ my_public_ip.stdout }}/32"
         - proto: -1
           ports: -1
-          group_name: ec2nodes
-    diff: false
+          group_name: Braulioec2nodes
+    diff: false 
 
   - name: Create EC2 instances
     include_role: name=ec2instances
     vars:
       verb: create
       count: "{{ masters | int + workers | int }}"
+      vpc_subnet_id: "{{ public_subnet_id }}"
 
   - name: Show instance data
     debug:

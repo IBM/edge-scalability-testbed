@@ -1,0 +1,25 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    region: "us-east-2"
+  tasks: 
+    - include_vars: "../.data/{{ region }}_network_elb_helper_vars.yaml"
+
+    - name: Remove an ELB
+      community.aws.elb_network_lb:
+        name: "{{ cluster_name }}-elb-network"
+        region: "{{ region }}"
+        state: absent
+
+    - name: Delete a target group
+      community.aws.elb_target_group:
+        name:  "{{ cluster_name }}-targetGroup"
+        region: "{{ region }}"
+        vpc_id: "{{ vpc_id }}"
+        state: absent
+
+    - name: Remove file
+      ansible.builtin.file:
+        path: "../.data/{{ region }}_network_elb_helper_vars.yaml"
+        state: absent

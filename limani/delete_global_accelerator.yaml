@@ -4,15 +4,7 @@
   vars:
     region: 'us-east-2'
   tasks:
-    - include_vars: "global_accelerator_vars.yaml"
-
-    - name: Debug Disable Global Accelerator
-      ansible.builtin.debug:
-        msg: "{{ endpoint_group_arn  }}"
-
-    - name: Delete Accelerator Endpoint Group
-      shell: aws --region us-west-2 globalaccelerator delete-endpoint-group  --endpoint-group-arn {{ endpoint_group_arn  }}
-
+    - include_vars: "../.data/global_accelerator_vars.yaml"
 
     - name: Delete Accelerator Listener
       shell: aws --region us-west-2 globalaccelerator  delete-listener --listener-arn {{ listener_arn }}
@@ -26,7 +18,7 @@
       ansible.builtin.debug:
         msg: "{{ glt_endpoint_output.stdout }}"
 
-    - name: Sleep for 30 seconds and continue with play
+    - name: Sleep for 60 seconds and continue with play
       wait_for:
         timeout: 60
       delegate_to: localhost
@@ -36,5 +28,5 @@
 
     - name: Remove file deletion_helper_vars.yaml
       ansible.builtin.file:
-        path: "global_accelerator_vars.yaml"
+        path: "../.data/global_accelerator_vars.yaml"
         state: absent

@@ -17,6 +17,7 @@
     group: "{{ group }}"
     count: "{{ count }}"
     wait: yes
+    vpc_subnet_id: "{{ vpc_subnet_id }}"
   register: ec2_instances
 
 - name: Get private IPs

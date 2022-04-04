@@ -1,0 +1,91 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    region: "us-east-2"
+    cluster_name: "hub"
+    port_num: 80
+    ecs_device: yes
+    # vpc_id: "vpc-60518309"
+    # public_subnet_id: "subnet-2f928565"
+    # extra_public_subnet_id:  "subnet-ce74d8a7"
+  tasks:
+    - include_vars: "../.data/{{ region }}_vpc_helper_vars.yaml"
+
+    - name: Read instance data
+      include_vars:
+        file: "../.data/ec2_instances_{{ cluster_name }}.json"
+        name: ec2_instances
+
+    - name: Get private IPs
+      set_fact:
+        private_ips: "{{ ec2_instances | community.general.json_query('instances[*].private_ip') }}"
+
+    - name: Debug Message Target Group
+      ansible.builtin.debug:
+        msg: "{{ private_ips }}"
+
+
+    - name: Create a target group with a default health check
+      community.aws.elb_target_group:
+        #name: "{{ cluster_name }}-targetGroup"
+        name: "BraulioTest-targetGroup"
+        protocol: tcp
+        target_type: ip
+        port: "{{ port_num }}"
+        vpc_id:  "{{ vpc_id }}"
+        targets:
+          - Id: "{{ private_ips[0] }}"
+            Port: "{{ port_num }}"
+          - Id: "{{ private_ips[1] }}"
+            Port: "{{ port_num }}"
+        state: present
+      register: target_group_output
+      when: not ecs_device
+
+
+    - name: Create a ECS target group with a default health check
+      community.aws.elb_target_group:
+        #name: "{{ cluster_name }}-targetGroup"
+        name: "BraulioTest-targetGroup"
+        protocol: tcp
+        target_type: ip
+        port: "{{ port_num }}"
+        vpc_id:  "{{ vpc_id }}"
+        state: present
+      register: target_group_output
+      when: ecs_device | bool
+
+
+    - name: Debug Message Target Group
+      ansible.builtin.debug:
+        msg: "{{ target_group_output}}"
+
+
+    - name: Create an ELB with an attached Elastic IP address
+      community.aws.elb_network_lb:
+        #name: "{{ cluster_name }}-elb-network"
+        name: "BraulioTest-elb-network"
+        subnets:
+          -  "{{ public_subnet_id }}"
+          -  "{{ extra_public_subnet_id }}"
+        listeners:
+          - Protocol: TCP # Required. The protocol for connections from clients to the load balancer (TCP, TLS, UDP or TCP_UDP) (case-sensitive).
+            Port: "{{ port_num }}" # Required. The port on which the load balancer is listening.
+            DefaultActions:
+              - Type: forward # Required. Only 'forward' is accepted at this time
+                TargetGroupName: "BraulioTest-targetGroup" # Required. The name of the target group
+        state: present 
+        scheme: internet-facing
+        wait: yes
+      register: elb_network_output
+
+    - name: Debug Message for ELB
+      ansible.builtin.debug:
+        msg: "{{ elb_network_output }}"
+
+
+    - name: Create vars file to help with deletion of resources
+      ansible.builtin.copy:
+        content: "region: {{ region }}\ncluster_name: {{ cluster_name }}\nvpc_id: {{ vpc_id }}\ntargetGroupArn: {{ target_group_output.target_group_arn}}\nendpoint_arn: {{ elb_network_output.load_balancer_arn }}"
+        dest: "../.data/{{ region }}_network_elb_helper_vars.yaml"

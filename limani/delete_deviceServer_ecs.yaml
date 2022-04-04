@@ -1,0 +1,71 @@
+---
+- hosts: localhost
+  become: yes
+  gather_facts: no
+  vars:
+    region: 'us-east-2'
+    cluster_name: 'test-demo-cloud'
+    task_revision: 1
+  tasks:
+    - name: Load a variable files
+      include_vars:  "{{ item }}"
+      loop:
+        - "../.data/{{ region }}_deviceServer_helper_vars.yaml"
+        - "../.data/{{ region }}_network_elb_helper_vars.yaml"
+
+    - name: Delete security group by its id
+      amazon.aws.ec2_group:
+        region: "{{ region }}"
+        group_id: "{{ sg_id }}"
+        state: absent
+
+    - name: Set ECS service task = 0
+      community.aws.ecs_service:
+        state: present
+        region: "{{ region }}"
+        name: "{{ task_name }}-service"
+        cluster:  "{{ cluster_name }}"
+        task_definition: "{{ task_name }}"
+        desired_count: 0
+        load_balancers:
+          - targetGroupArn: "{{ targetGroupArn }}"
+            containerName: "{{ containerName }}"
+            containerPort: "{{ containerPort}}"
+            
+    - name: Get the list of any remaning running tasks
+      shell: aws ecs list-tasks --cluster {{ cluster_name }}
+      register: task_list_output
+
+    - name: Store the list of Managed Clusters
+      set_fact:
+        clusters: "{{ task_list_output.stdout}}"
+
+    - name: Stop a task
+      community.aws.ecs_task:
+        operation: stop
+        cluster: "{{ cluster_name }}"
+        task_definition: "{{ task_name }}"
+        task: "{{ item }}"
+      with_items: '{{ clusters.taskArns }}'
+
+    - name: Delete task definition
+      community.aws.ecs_taskdefinition:
+        family: "{{ task_name }}"
+        revision: "{{ task_revision }}"
+        state: absent
+
+    - name: Delete Service
+      community.aws.ecs_service:
+        name: "{{ task_name }}-service"
+        cluster: "{{ cluster_name }}"
+        state: absent
+
+    - name: Cluster deletion
+      community.aws.ecs_cluster:
+        name: "{{ cluster_name }}"
+        state: absent
+
+    - name: Remove file deletion_helper_vars.yaml
+      ansible.builtin.file:
+        path: "../.data/{{ region }}_deviceServer_helper_vars.yaml"
+        state: absent

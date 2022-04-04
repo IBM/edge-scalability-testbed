@@ -2,12 +2,8 @@
 - hosts: localhost
   gather_facts: no
   vars:
-    region: us-east-1
-
+    region: us-east-2
   tasks:
-  - fail: msg="cluster_name is required"
-    when: cluster_name is undefined
-
   - name: Read instance data
     include_vars:
       file: ".data/ec2_instances_{{ cluster_name }}.json"
