@@ -1,0 +1,12 @@
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  gather_facts: no
+  connection: ssh
+  vars:
+    region: us-east-2
+
+  tasks:
+    - include_role: name=deviceserver
+      vars:
+        foo: bar
