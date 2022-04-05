@@ -2,11 +2,11 @@
 - hosts: localhost
   gather_facts: no
   vars:
-    region: "us-east-2"
-    availability_zone_a: 'us-east-2a'
-    availability_zone_b: 'us-east-2c'
-    multiple_az: yes
-    vpc_name: "testBD-pvc"
+    region: "{{ region }}"
+    vpc_name: "{{ vpc_name }}"
+    availability_zone_a: "{{ az_x }}"
+    availability_zone_b: "{{ az_y }}"
+    multiple_az:  "{{ multiple_zones| default('yes') }}"
   tasks:
     # Constructing the VPC and subnets
     - name: Create VPC

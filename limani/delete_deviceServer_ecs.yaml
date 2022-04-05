@@ -3,9 +3,9 @@
   become: yes
   gather_facts: no
   vars:
-    region: 'us-east-2'
-    cluster_name: 'test-demo-cloud'
-    task_revision: 1
+    region: "{{ region }}"
+    cluster_name: "{{ ecs_cluster_name }}"
+    task_revision: "{{ task_rev | default(1) }}"
   tasks:
     - name: Load a variable files
       include_vars:  "{{ item }}"
@@ -17,6 +17,7 @@
       amazon.aws.ec2_group:
         region: "{{ region }}"
         group_id: "{{ sg_id }}"
+        vpc_id: "{{ vpc_id }}"
         state: absent
 
     - name: Set ECS service task = 0

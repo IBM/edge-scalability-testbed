@@ -2,13 +2,13 @@
 - hosts: localhost
   gather_facts: no
   vars:
-    region: "us-east-2"
-    cluster_name: "test-demo-cloud"
-    task_name: "Brauliot-task"
-    container_name: "nginx"
-    container_image: "nginx:latest"
-    num_replicas: 2
-    port_num: 80
+    region: "{{ region }}"
+    cluster_ecs_name: "{{ ecs_cluster_name | default('device_server') }}"
+    task_name: "{{ ecs_task_name | default('device_task') }}"
+    container_name: "{{ ecs_container_name | default('device_server') }}"
+    container_image: "{{ container_image }}"
+    num_replicas: "{{ replicas_count | default(1) }}"
+    port_num: "{{ port_num }}"
   tasks:
     - name: Load a variable files
       include_vars:  "{{ item }}"
@@ -40,7 +40,7 @@
 
     - name: Cluster creation
       community.aws.ecs_cluster:
-        name: "{{ cluster_name }}"
+        name: "{{ cluster_ecs_name }}"
         state: present
         region: "{{ region }}"
 
@@ -96,7 +96,7 @@
           subnets:
           - "{{ public_subnet_id }}"
           security_groups:
-          - "sg-096376568b78cc884"
+          - "{{ result_sg.group_id }}"
       register: ecs_service_output
 
     - name: Debug ECS Service

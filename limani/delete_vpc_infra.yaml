@@ -3,7 +3,7 @@
   become: yes
   gather_facts: no
   vars:
-    region: 'us-east-2'
+    region: "{{ region }}"
   tasks:
     - include_vars: "../.data/{{ region }}_vpc_helper_vars.yaml"
 

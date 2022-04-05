@@ -2,7 +2,7 @@
 - hosts: localhost
   gather_facts: no
   vars:
-    endpoint_region: 'us-east-2'
+    endpoint_region: "{{ region }}"
   tasks:
     - include_vars: "../.data/{{ endpoint_region }}_endpoint_helper_vars.yaml"
 

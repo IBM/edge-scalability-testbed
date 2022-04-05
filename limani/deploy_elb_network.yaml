@@ -2,13 +2,10 @@
 - hosts: localhost
   gather_facts: no
   vars:
-    region: "us-east-2"
-    cluster_name: "hub"
-    port_num: 80
-    ecs_device: yes
-    # vpc_id: "vpc-60518309"
-    # public_subnet_id: "subnet-2f928565"
-    # extra_public_subnet_id:  "subnet-ce74d8a7"
+    region: "{{ region }}"
+    cluster_name: "{{ ec2_cluster_name | default('hub') }}"
+    port_num: "{{ port_num }}"
+    ecs_device: "{{ deploy_ecs_device | default('no') }}"
   tasks:
     - include_vars: "../.data/{{ region }}_vpc_helper_vars.yaml"
 
@@ -16,14 +13,17 @@
       include_vars:
         file: "../.data/ec2_instances_{{ cluster_name }}.json"
         name: ec2_instances
+      when: not ecs_device
 
     - name: Get private IPs
       set_fact:
         private_ips: "{{ ec2_instances | community.general.json_query('instances[*].private_ip') }}"
+      when: not ecs_device
 
     - name: Debug Message Target Group
       ansible.builtin.debug:
         msg: "{{ private_ips }}"
+      when: not ecs_device
 
 
     - name: Create a target group with a default health check

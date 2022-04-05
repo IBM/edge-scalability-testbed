@@ -2,8 +2,8 @@
 - hosts: localhost
   gather_facts: no
   vars:
-    endpoint_region: "us-east-2"
-    weight: 100
+    endpoint_region: "{{ region }}"
+    weight: "{{ weight }}"
   tasks:
     - name: Load a variable files
       include_vars:  "{{ item }}"

@@ -3,8 +3,8 @@
   become: yes
   gather_facts: no
   vars:
-    accelerator_name: "LimaniAccelerator"
-    port_num: 31033
+    accelerator_name: "{{ accelerator_name }}"
+    port_num: "{{ port_num }}"
   tasks:
     #- include_vars: "{{ region }}_device_helper_vars.yaml"
     - name: Create AWS Global Accelerator
