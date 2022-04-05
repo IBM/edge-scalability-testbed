@@ -54,7 +54,7 @@
         tar -xzf EasyRSA-3.0.8.tgz
         cp -r EasyRSA-3.0.8/* /usr/local/bin/ && rm -rf EasyRSA-3.0.8 EasyRSA-3.0.8.tgz
 
-    - name: Modify SAN
+    - name: Modify SAN (for device server) before building pki
       ansible.builtin.lineinfile:
         path: /root/limani/hack/ca-init.sh
         regexp: '^MASTER_IP='
