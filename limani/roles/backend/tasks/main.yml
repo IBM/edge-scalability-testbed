@@ -28,6 +28,16 @@
   shell: |
     cp /root/.kube/config /root/limani/kube.conf
 
+- name: Get the public IP address of the node
+  shell: curl ifconfig.me
+  register: node_public_ip
+
+- name: Replace apiserver's IP address in the kubeconfig file
+  ansible.builtin.replace:
+    path: /root/limani/kube.conf
+    regexp: '^\s+server:.*'
+    replace: "    server: https://{{ node_public_ip.stdout }}:6443"
+
 - name: Get AWS account ID
   shell: |
     aws sts get-caller-identity --query "Account" --output text
