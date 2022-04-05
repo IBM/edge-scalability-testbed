@@ -9,11 +9,14 @@
     - fail: msg="github_token is required"
       when: github_token is undefined
     
-    - fail: msg="img_registry is required"
-      when: img_registry is undefined
+    - fail: msg="aws_region is required"
+      when: aws_region is undefined
 
-    - fail: msg="img_registry_pswd is required"
-      when: img_registry_pswd is undefined
+    - fail: msg="aws_access_key is required"
+      when: aws_access_key is undefined
+
+    - fail: msg="aws_secret_key is required"
+      when: aws_secret_key is undefined
 
     - name: Get limani code
       shell: |
@@ -54,35 +57,6 @@
         tar -xzf EasyRSA-3.0.8.tgz
         cp -r EasyRSA-3.0.8/* /usr/local/bin/ && rm -rf EasyRSA-3.0.8 EasyRSA-3.0.8.tgz
 
-    - name: Modify SAN (for device server) before building pki
-      ansible.builtin.lineinfile:
-        path: /root/limani/hack/ca-init.sh
-        regexp: '^MASTER_IP='
-        line: MASTER_IP=127.0.0.1
-
-    - name: Build pki
-      shell: |
-        hack/ca-init.sh
-      args:
-        chdir: /root/limani/
-
-    - name: Pack pki
-      shell: |
-        tar czf pki.tgz hack/pki/
-      args:
-        chdir: /root/limani/
-
-    - name: Fetch pki
-      ansible.builtin.fetch:
-        src: /root/limani/pki.tgz
-        dest: /tmp/pki.tgz
-        flat: true
-
-    - name: Remove pki pack
-      ansible.builtin.file:
-        path: /root/limani/pki.tgz
-        state: absent
-
     - name: Install controller-gen
       shell: |
         export PATH=$PATH:/usr/local/go/bin
@@ -103,70 +77,6 @@
       args:
         chdir: /root/limani/
       failed_when: false
-
-    - name: Login to registry
-      shell: |
-        docker login -u {{ img_registry }} -p {{ img_registry_pswd }}
-
-    - name: Build images for limani controllers and device server
-      shell: |
-        export PATH=$PATH:/usr/local/go/bin
-        make docker-build docker-push IMG_REGISTRY={{ img_registry }}
-      args:
-        chdir: /root/limani/
-
-    - name: Deploy limani controllers, limani device server, and Dynamodb Local
-      shell: |
-        export PATH=$PATH:/usr/local/go/bin
-        make deploy IMG_REGISTRY={{ img_registry }}
-      args:
-        chdir: /root/limani/
-      when: place is undefined
-
-    - name: Deploy limani controllers, limani device server, and Dynamodb
-      shell: |
-        export PATH=$PATH:/usr/local/go/bin
-        export AWS_ACCESS_KEY={{ aws_access_key }}
-        export AWS_SECRET_KEY={{ aws_secret_key }}
-        export AWS_REGION={{ aws_region }}
-        make deploy IMG_REGISTRY={{ img_registry }} PLACE={{ place }}
-      args:
-        chdir: /root/limani/
-      when: place is defined
-
-    - name: Generate cert for agent
-      shell: |
-        hack/device-cert.sh foo
-      args:
-        executable: /bin/bash
-        chdir: /root/limani/
-
-    - name: Create examples for configspec and devicegroup
-      shell: |
-        kubectl apply -f deploy/cr-samples/edge_v1alpha1_configspec.yaml
-        kubectl apply -f deploy/cr-samples/edge_v1alpha1_devicegroup.yaml
-      args:
-        chdir: /root/limani/
-
-    - name: Create an example for inventorydevice
-      shell: |
-        deploy/mk-device.sh foo devicegroup-sample
-      args:
-        chdir: /root/limani/
-
-    - name: Find the device server's nodePort
-      shell: |
-        kubectl -n limani-system get svc limani-deviceserver -ojsonpath="{.spec.ports[0].nodePort}"
-      register: device_server_nodeport
-
-    - name: Run the agent for once
-      shell: |
-        export PATH=$PATH:/usr/local/go/bin
-        export DEVICE_SERVER=https://127.0.0.1:{{ device_server_nodeport.stdout }}
-        export DEVICE=foo
-        go run cmd/agent/main.go --server $DEVICE_SERVER -ca ./hack/pki/ca/ca.crt -client-cert ./hack/pki/ca/issued/$DEVICE.crt -client-key ./hack/pki/clients/$DEVICE/private/$DEVICE.key -device $DEVICE
-      args:
-        chdir: /root/limani/
 
     - name: Install unzip 
       shell: |
@@ -191,32 +101,14 @@
         aws_access_key_id: "{{ aws_access_key | default('dummy') }}"
         aws_secret_access_key: "{{ aws_secret_key | default('dummy') }}"
         region: "{{ aws_region | default('us-east-1') }}"
-        format: "json"
+        format: "yaml"
 
-    - name: Find the dynamodb services' clusterIP
-      shell: |
-        kubectl -n limani-system get svc limani-dynamodb -ojsonpath="{.spec.clusterIPs[0]}"
-      register: dynamodb_svc_clusterip
-      when: place is undefined
+    - name: Get the public IP address of the node
+      shell: curl ifconfig.me
+      register: node_public_ip
 
-    - name: List dynamodb tables
-      shell: |
-        aws dynamodb list-tables --endpoint-url http://{{ dynamodb_svc_clusterip.stdout }}:8000 --region ""
-      register: dynamodb_tables
-      when: place is undefined
-    
-    - name: Show dynamodb tables
-      debug:
-        var: dynamodb_tables.stdout
-      when: place is undefined
-
-    - name: Scan the 'deviceConfigStatuses' table to show status update
-      shell: |
-        aws dynamodb scan --table-name deviceConfigStatuses --endpoint-url http://{{ dynamodb_svc_clusterip.stdout }}:8000 --region ""
-      register: deviceConfigStatuses_scanned
-      when: place is undefined
-
-    - name: Show the scanned table
-      debug:
-        var: deviceConfigStatuses_scanned.stdout
-      when: place is undefined
+    - name: Modify SAN (for device server)
+      ansible.builtin.lineinfile:
+        path: /root/limani/hack/ca-init.sh
+        regexp: '^MASTER_IP='
+        line: "MASTER_IP={{ node_public_ip.stdout }}"
