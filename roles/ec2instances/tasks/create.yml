@@ -5,8 +5,8 @@
 
 - name: Create ec2 instance(s)
   ec2:
-    region: "{{ region }}"
-    image: "{{ image_id }}"
+    region: "{{ ec2_region }}"
+    image: "{{ ec2_image_id }}"
     instance_type: "{{ instance_type }}"
     volumes:
       - device_name: /dev/sda1

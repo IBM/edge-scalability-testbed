@@ -3,7 +3,7 @@
   gather_facts: no
   vars:
     region: "{{ region }}"
-    cluster_name: "{{ ec2_cluster_name | default('hub') }}"
+    cluster_name: "{{ ec2_cluster_name | default('limani') }}"
     port_num: "{{ port_num }}"
     ecs_device: "{{ deploy_ecs_device | default('no') }}"
   tasks:
@@ -28,8 +28,8 @@
 
     - name: Create a target group with a default health check
       community.aws.elb_target_group:
-        #name: "{{ cluster_name }}-targetGroup"
-        name: "BraulioTest-targetGroup"
+        name: "{{ cluster_name }}-targetGroup"
+        region: "{{ region }}"
         protocol: tcp
         target_type: ip
         port: "{{ port_num }}"
@@ -46,8 +46,8 @@
 
     - name: Create a ECS target group with a default health check
       community.aws.elb_target_group:
-        #name: "{{ cluster_name }}-targetGroup"
-        name: "BraulioTest-targetGroup"
+        name: "{{ cluster_name }}-targetGroup"
+        region: "{{ region }}"
         protocol: tcp
         target_type: ip
         port: "{{ port_num }}"
@@ -64,8 +64,8 @@
 
     - name: Create an ELB with an attached Elastic IP address
       community.aws.elb_network_lb:
-        #name: "{{ cluster_name }}-elb-network"
-        name: "BraulioTest-elb-network"
+        name: "{{ cluster_name }}-elb-network"
+        region: "{{ region }}"
         subnets:
           -  "{{ public_subnet_id }}"
           -  "{{ extra_public_subnet_id }}"
@@ -74,7 +74,7 @@
             Port: "{{ port_num }}" # Required. The port on which the load balancer is listening.
             DefaultActions:
               - Type: forward # Required. Only 'forward' is accepted at this time
-                TargetGroupName: "BraulioTest-targetGroup" # Required. The name of the target group
+                TargetGroupName: "{{ cluster_name }}-targetGroup" # Required. The name of the target group
         state: present 
         scheme: internet-facing
         wait: yes

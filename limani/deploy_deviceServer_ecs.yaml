@@ -37,6 +37,8 @@
     - name: Create a log group
       community.aws.cloudwatchlogs_log_group:
         log_group_name: "{{ task_name }}"
+        region: "{{ region }}"
+        state: present
 
     - name: Cluster creation
       community.aws.ecs_cluster:
@@ -47,6 +49,7 @@
     - name: Create task definition
       community.aws.ecs_taskdefinition:
         family: "{{ task_name }}"
+        region: "{{ region }}"
         containers:
         - name: "{{ container_name }}"
           essential: true
@@ -83,7 +86,7 @@
         state: present
         region: "{{ region }}"
         name: "{{ task_name }}-service"
-        cluster:  "{{ cluster_name }}"
+        cluster:  "{{ cluster_ecs_name }}"
         task_definition: "{{ task_name }}"
         desired_count: "{{ num_replicas }}"
         launch_type: FARGATE
@@ -105,5 +108,5 @@
 
     - name: Create vars file to help with deletion of resources
       ansible.builtin.copy:
-        content: "cluster_name: {{ cluster_name }}\ntask_name: {{ task_name }}\ncontainerName: {{ container_name }}\ncontainerPort: {{ port_num }}\nsg_id: {{ result_sg.group_id }}"
+        content: "cluster_name: {{ cluster_ecs_name }}\ntask_name: {{ task_name }}\ncontainerName: {{ container_name }}\ncontainerPort: {{ port_num }}\nsg_id: {{ result_sg.group_id }}"
         dest: "../.data/{{ region }}_deviceServer_helper_vars.yaml"

@@ -4,7 +4,7 @@
   vars:
     region: "{{ region }}"
   tasks: 
-    #- include_vars: "../.data/{{ region }}_network_elb_helper_vars.yaml"
+    - include_vars: "../.data/{{ region }}_network_elb_helper_vars.yaml"
 
     - name: Remove an ELB
       community.aws.elb_network_lb:

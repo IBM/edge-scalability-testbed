@@ -2,8 +2,8 @@
 - hosts: localhost
   gather_facts: no
   vars:
-    region: us-east-1
-
+    aws_region: "{{ region | default('us-east-1') }}"
+    group: "{{ sig_group | default('ec2nodes') }}"
   tasks:
   - fail: msg="cluster_name is required"
     when: cluster_name is undefined
@@ -32,7 +32,7 @@
 
   - name: Delete the security group
     amazon.aws.ec2_group:
-      region: "{{ region }}"
-      name: ec2nodes
+      region: "{{ aws_region }}"
+      name: "{{ group }}"
       state: absent
     failed_when: false

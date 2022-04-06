@@ -83,6 +83,7 @@
     - name: Create NAT Gateway
       amazon.aws.ec2_vpc_nat_gateway:
         state:                  'present'
+        region:                 "{{ region }}"
         subnet_id:              "{{ result_public_subnet.subnet.id }}"
         wait:                   yes
         if_exist_do_not_create: true
