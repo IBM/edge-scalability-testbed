@@ -7,10 +7,11 @@
     workers: "{{ num_workers| default(1) }}"
     ec2_image: "{{ image_id| default('ami-04505e74c0741db8d') }}"
     ec2_instance_type: "{{ ec2_type| default('t2.micro') }}"
-    default_vpc: yes
+    default_vpc: no
     aws_default_vpc_az: "{{ default_vpc_az| default('us-east-1b') }}"
     ec2_group: "{{ sig_group | default('ec2nodes') }}"
     aws_key_name: "{{ aws_key| default('amazontestkey') }}"
+    port_num: 31033
   tasks:
   - fail: msg="cluster_name is required"
     when: cluster_name is undefined
@@ -27,9 +28,10 @@
     register: vpc_info
     when: default_vpc | bool
 
-  - name: Print all subnets available facts
+  - name: Print all default VPC facts
     ansible.builtin.debug:
       var: aws_default_vpc_az
+    when: default_vpc | bool
 
   - name: Set vpc_id facts for the default VPC
     set_fact: 
@@ -49,6 +51,7 @@
   - name: Print all subnets available facts
     ansible.builtin.debug:
       var: subnets_info
+    when: default_vpc | bool 
  
 
   - name: Read VPC configuration data
@@ -73,6 +76,11 @@
         - proto: tcp
           ports: 6443
           cidr_ip: "{{ my_public_ip.stdout }}/32"
+        - proto: tcp
+          ports:
+          - "{{ port_num }}"
+          cidr_ip: 0.0.0.0/0
+          rule_desc: allow all on port {{ port_num }}
         - proto: -1
           ports: -1
           group_name: "{{ ec2_group }}"

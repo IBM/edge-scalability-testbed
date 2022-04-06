@@ -5,13 +5,14 @@
     region: "{{ region }}"
     cluster_name: "{{ ec2_cluster_name | default('limani') }}"
     port_num: "{{ port_num }}"
-    ecs_device: "{{ deploy_ecs_device | default('no') }}"
+    ecs_device: no
   tasks:
     - include_vars: "../.data/{{ region }}_vpc_helper_vars.yaml"
 
     - name: Read instance data
       include_vars:
-        file: "../.data/ec2_instances_{{ cluster_name }}.json"
+        #file: "../.data/ec2_instances_{{ cluster_name }}.json"
+        file: "../.data/ec2_instances_{{ region }}.json"
         name: ec2_instances
       when: not ecs_device
 
@@ -36,11 +37,17 @@
         vpc_id:  "{{ vpc_id }}"
         targets:
           - Id: "{{ private_ips[0] }}"
-            Port: "{{ port_num }}"
+            Port: "{{ port_num | int }}"
           - Id: "{{ private_ips[1] }}"
-            Port: "{{ port_num }}"
+            Port: "{{ port_num | int }}"
         state: present
       register: target_group_output
+      when: not ecs_device
+
+
+    - name: Debug Message Target Group
+      ansible.builtin.debug:
+        msg: "{{ target_group_output}}"
       when: not ecs_device
 
 
@@ -53,13 +60,14 @@
         port: "{{ port_num }}"
         vpc_id:  "{{ vpc_id }}"
         state: present
-      register: target_group_output
+      register: ecs_target_group_output
       when: ecs_device | bool
 
 
-    - name: Debug Message Target Group
+    - name: Debug Message ECS Target Group
       ansible.builtin.debug:
-        msg: "{{ target_group_output}}"
+        msg: "{{ ecs_target_group_output }}"
+      when: ecs_device | bool
 
 
     - name: Create an ELB with an attached Elastic IP address
@@ -89,3 +97,13 @@
       ansible.builtin.copy:
         content: "region: {{ region }}\ncluster_name: {{ cluster_name }}\nvpc_id: {{ vpc_id }}\ntargetGroupArn: {{ target_group_output.target_group_arn}}\nendpoint_arn: {{ elb_network_output.load_balancer_arn }}"
         dest: "../.data/{{ region }}_network_elb_helper_vars.yaml"
+      when: not ecs_device
+
+    - name: Create vars file to help with deletion of ECS resources
+      ansible.builtin.copy:
+        content: "region: {{ region }}\ncluster_name: {{ cluster_name }}\nvpc_id: {{ vpc_id }}\ntargetGroupArn: {{ ecs_target_group_output.target_group_arn}}\nendpoint_arn: {{ elb_network_output.load_balancer_arn }}"
+        dest: "../.data/{{ region }}_network_elb_helper_vars.yaml"
+      when: ecs_device | bool
+
+
+

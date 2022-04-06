@@ -4,7 +4,7 @@
   gather_facts: no
   vars:
     region: "{{ region }}"
-    cluster_ecs_name: "{{ ecs_cluster_name }}"
+    cluster_ecs_name: "{{ ecs_cluster_name  | default('agent_simulator') }}"
     task_revision: "{{ task_rev | default(1) }}"
   tasks:
     - include_vars: "../.data/{{ region }}_{{ cluster_ecs_name }}_agent_helper_vars.yaml"
