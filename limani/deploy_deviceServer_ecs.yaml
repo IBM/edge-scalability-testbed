@@ -1,0 +1,112 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    region: "{{ region }}"
+    cluster_ecs_name: "{{ ecs_cluster_name | default('device_server') }}"
+    task_name: "{{ ecs_task_name | default('device_task') }}"
+    container_name: "{{ ecs_container_name | default('device_server') }}"
+    container_image: "{{ container_image }}"
+    num_replicas: "{{ replicas_count | default(1) }}"
+    port_num: "{{ port_num }}"
+  tasks:
+    - name: Load a variable files
+      include_vars:  "{{ item }}"
+      loop:
+        - "../.data/{{ region }}_vpc_helper_vars.yaml"
+        - "../.data/{{ region }}_network_elb_helper_vars.yaml"
+
+    - name: Creating security group rule descriptions
+      amazon.aws.ec2_group:
+        name: "{{ task_name }}-securityGroup"
+        description: "sg for ecs task {{ task_name }}"
+        vpc_id:  "{{ vpc_id }}"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            ports:
+            - "{{ port_num }}"
+            cidr_ip: 0.0.0.0/0
+            rule_desc: allow all on port 80
+      register: result_sg
+
+    - name: Debug Security Group
+      ansible.builtin.debug:
+        msg: "{{ result_sg }}"
+
+    - name: Create a log group
+      community.aws.cloudwatchlogs_log_group:
+        log_group_name: "{{ task_name }}"
+        region: "{{ region }}"
+        state: present
+
+    - name: Cluster creation
+      community.aws.ecs_cluster:
+        name: "{{ cluster_ecs_name }}"
+        state: present
+        region: "{{ region }}"
+
+    - name: Create task definition
+      community.aws.ecs_taskdefinition:
+        family: "{{ task_name }}"
+        region: "{{ region }}"
+        containers:
+        - name: "{{ container_name }}"
+          essential: true
+          image: "{{ container_image }}"
+          portMappings:
+          - containerPort: "{{ port_num }}"
+            hostPort: "{{ port_num }}"
+            protocol: "tcp"
+          cpu: 256
+          memoryReservation: 512
+          logConfiguration:
+            logDriver: awslogs
+            options:
+              awslogs-group: "{{ task_name }}"
+              awslogs-region: "{{ region }}"
+              # awslogs-create-group: "true"
+              awslogs-stream-prefix: ecs
+        launch_type: FARGATE
+        cpu: "256"
+        memory: "512"
+        state: present
+        network_mode: awsvpc
+        execution_role_arn: ecsTaskExecutionRole
+      register: task_definition_output
+
+
+    - name: Debug Task Definition
+      ansible.builtin.debug:
+        msg: "{{ task_definition_output }}"
+
+    # Basic provisioning example
+    - name: Provisioning ECS Service
+      community.aws.ecs_service:
+        state: present
+        region: "{{ region }}"
+        name: "{{ task_name }}-service"
+        cluster:  "{{ cluster_ecs_name }}"
+        task_definition: "{{ task_name }}"
+        desired_count: "{{ num_replicas }}"
+        launch_type: FARGATE
+        load_balancers:
+          - targetGroupArn: "{{ targetGroupArn }}"
+            containerName:  "{{ container_name }}"
+            containerPort: "{{ port_num }}"
+        network_configuration:
+          assign_public_ip: yes
+          subnets:
+          - "{{ public_subnet_id }}"
+          security_groups:
+          - "{{ result_sg.group_id }}"
+      register: ecs_service_output
+
+    - name: Debug ECS Service
+      ansible.builtin.debug:
+        msg: "{{ ecs_service_output }}" 
+
+    - name: Create vars file to help with deletion of resources
+      ansible.builtin.copy:
+        content: "cluster_name: {{ cluster_ecs_name }}\ntask_name: {{ task_name }}\ncontainerName: {{ container_name }}\ncontainerPort: {{ port_num }}\nsg_id: {{ result_sg.group_id }}"
+        dest: "../.data/{{ region }}_deviceServer_helper_vars.yaml"

@@ -1,0 +1,30 @@
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - include_vars: "../.data/global_accelerator_vars.yaml"
+
+    - name: Delete Accelerator Listener
+      shell: aws --region us-west-2 globalaccelerator  delete-listener --listener-arn {{ listener_arn }}
+
+
+    - name: Disable Global Accelerator
+      shell: aws --region us-west-2 globalaccelerator update-accelerator --accelerator-arn {{  accelerator_arn }}  --no-enabled
+      register: glt_endpoint_output
+
+    - name: Debug Disable Global Accelerator
+      ansible.builtin.debug:
+        msg: "{{ glt_endpoint_output.stdout }}"
+
+    - name: Sleep for 60 seconds and continue with play
+      wait_for:
+        timeout: 120
+      delegate_to: localhost
+
+    - name: Delete Global Accelerator
+      shell: aws --region us-west-2 globalaccelerator delete-accelerator --accelerator-arn {{  accelerator_arn }} 
+
+    - name: Remove file deletion_helper_vars.yaml
+      ansible.builtin.file:
+        path: "../.data/global_accelerator_vars.yaml"
+        state: absent

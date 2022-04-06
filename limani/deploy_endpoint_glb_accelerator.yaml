@@ -1,0 +1,33 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    endpoint_region: "{{ region }}"
+    weight: "{{ weight }}"
+  tasks:
+    - name: Load a variable files
+      include_vars:  "{{ item }}"
+      loop:
+        - "../.data/{{ endpoint_region }}_network_elb_helper_vars.yaml"
+        - "../.data/global_accelerator_vars.yaml"
+
+    - name: Create AWS Global Accelerator Endpoint Group
+      shell: |
+          aws --region us-west-2 globalaccelerator create-endpoint-group \
+              --listener-arn {{ listener_arn }} \
+              --endpoint-group-region {{ endpoint_region }} \
+              --endpoint-configurations EndpointId={{ endpoint_arn }},Weight={{ weight }}
+      register: glt_endpoint_output
+
+    - name: Set Accelerator Endpoint Group Facts
+      set_fact:
+        glt_endpointGroup: "{{ glt_endpoint_output.stdout}}"
+
+    - name: Debug Accelerator Endpoint Group
+      ansible.builtin.debug:
+        msg: "{{ glt_endpointGroup }}"
+
+    - name: Create vars file to help with deletion of endpoints attached to a Global Accelerator
+      ansible.builtin.copy:
+        content: "endpoint_group_arn: '{{ glt_endpointGroup.EndpointGroup.EndpointGroupArn }}'"
+        dest: "../.data/{{ endpoint_region }}_endpoint_helper_vars.yaml"
