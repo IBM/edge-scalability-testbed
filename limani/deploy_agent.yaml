@@ -3,10 +3,11 @@
   gather_facts: no
   vars:
     region: "{{ region }}"
-    cluster_ecs_name: "{{ ecs_cluster_name | default('agent_simulator') }}"
-    task_name: "{{ ecs_task_name | default('agent_task') }}"
-    container_name: "{{ ecs_container_name | default('agent') }}"
-    container_image: "{{ container_image }}"
+    cluster_ecs_name: "{{ ecs_cluster_name | default('devicesimulator') }}"
+    task_name: "{{ ecs_task_name | default('devicesimulator') }}"
+    container_name: "{{ ecs_container_name | default('devicesimulator') }}"
+    devicesimulator_image: "{{ devicesimulator_image }}"
+    credentials_image: "{{ credentials_image }}"
     num_replicas: "{{ replicas_count | default(1) }}"
   tasks:
     - include_vars: "../.data/{{ region }}_vpc_helper_vars.yaml"
@@ -29,19 +30,37 @@
         region: "{{ region }}"
         containers:
         - name: "{{ container_name }}"
+          image: "{{ devicesimulator_image }}" 
           essential: true
-          image: "{{ container_image }}" 
-          cpu: 256
-          memoryReservation: 512
+          entryPoint:
+          - /devicesimulator
+          command:
+          - --kubeconf=/kube/kube.conf
+          - --namespace=default
+          - --ca-cert-file=/tls/ca.crt
+          - --ca-key-file=/tls/ca.key
+          - -device-extra-labels=region=us-east-1
+          - --metrics-bind-address=0.0.0.0:8080
+          - --device-server=https://18.188.13.253:31033
+          - --fetch-spec-interval=60s
+          - --status-update-interval=60s
+          - --num=100
+          - -zap-time-encoding=rfc3339nano
+          - -zap-log-level=10
+          volumesFrom:
+          - sourceContainer: credentials
           logConfiguration:
             logDriver: awslogs
             options:
               awslogs-group: "{{ task_name }}"
               awslogs-region: "{{ region }}"
               awslogs-stream-prefix: ecs
+        - name: credentials
+          essential: false
+          image: "{{ credentials_image }}"
         launch_type: FARGATE
-        cpu: "256"
-        memory: "512"
+        cpu: 512
+        memory: 1GB
         state: present
         network_mode: awsvpc
         execution_role_arn: ecsTaskExecutionRole
