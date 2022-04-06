@@ -1,0 +1,151 @@
+---
+# pki
+- name: Build pki
+  shell: |
+    hack/ca-init.sh
+  args:
+    chdir: /root/limani/
+
+- name: Pack pki
+  shell: |
+    tar czf pki.tgz hack/pki/
+  args:
+    chdir: /root/limani/
+
+- name: Fetch pki
+  ansible.builtin.fetch:
+    src: /root/limani/pki.tgz
+    dest: /tmp/pki.tgz
+    flat: true
+
+- name: Remove pki pack
+  ansible.builtin.file:
+    path: /root/limani/pki.tgz
+    state: absent
+
+
+# container image for credentials
+- name: Change mode for credentials
+  file:
+    path: /root/limani/hack/pki/ca/ca.crt
+    mode: 0644
+
+- name: Change mode for credentials
+  file:
+    path: /root/limani/hack/pki/ca/private/ca.key
+    mode: 0644
+
+- name: Change mode for credentials
+  file:
+    path: /root/limani/hack/pki/ca/issued/server.crt
+    mode: 0644
+
+- name: Change mode for credentials
+  file:
+    path: /root/limani/hack/pki/ca/private/server.key
+    mode: 0644
+
+- name: Copy Dockerfile for the credentials container image
+  ansible.builtin.copy:
+    src: Dockerfile_Credentials
+    dest: /root/limani/deploy/Dockerfile_Credentials
+
+- name: Prepare the backend cluster's kubeconfig file for the credentials container image
+  shell: |
+    cp /root/.kube/config /root/limani/kube.conf
+
+- name: Get the public IP address of the node
+  shell: curl ifconfig.me
+  register: node_public_ip
+
+- name: Replace apiserver's IP address in the kubeconfig file
+  ansible.builtin.replace:
+    path: /root/limani/kube.conf
+    regexp: '^\s+server:.*'
+    replace: "    server: https://{{ node_public_ip.stdout }}:6443"
+
+- name: Get AWS account ID
+  shell: |
+    aws sts get-caller-identity --query "Account" --output text
+  register: aws_account_id
+
+- name: Build the credentials container image
+  shell: |
+    docker build -t {{ aws_account_id.stdout }}.dkr.ecr.{{ region }}.amazonaws.com/limani/credentials -f deploy/Dockerfile_Credentials .
+  args:
+    chdir: /root/limani/
+
+- name: Cleanup the backend cluster's kubeconfig file after building the credentials container image
+  shell: |
+    rm -f /root/limani/kube.conf
+
+- name: Login AWS ECR
+  shell: |
+    aws ecr get-login-password --region {{ region }} | docker login --username AWS --password-stdin {{ aws_account_id.stdout }}.dkr.ecr.{{ region }}.amazonaws.com
+
+- name: Create Repo for the credentials container image on AWS ECR
+  shell: |
+    aws ecr create-repository --repository-name limani/credentials --region {{ region }} 2>/dev/null | true
+
+- name: Push the credentials container image to AWS ECR
+  shell: |
+    docker push {{ aws_account_id.stdout }}.dkr.ecr.{{ region }}.amazonaws.com/limani/credentials
+
+
+# deployment
+- name: Login to registry
+  shell: |
+    docker login -u {{ img_registry }} -p {{ img_registry_pswd }}
+
+- name: Build and push images for limani controllers, device server, and device simulator
+  shell: |
+    export PATH=$PATH:/usr/local/go/bin
+    make docker-build docker-push IMG_REGISTRY={{ img_registry }}
+  args:
+    chdir: /root/limani/
+
+- name: Deploy limani controllers, limani device server, and Dynamodb
+  shell: |
+    export PATH=$PATH:/usr/local/go/bin
+    export AWS_ACCESS_KEY={{ aws_access_key }}
+    export AWS_SECRET_KEY={{ aws_secret_key }}
+    export AWS_REGION={{ aws_region }}
+    make deploy IMG_REGISTRY={{ img_registry }} PLACE={{ place }}
+  args:
+    chdir: /root/limani/
+
+
+# one-shot agent
+- name: Generate cert for agent
+  shell: |
+    hack/device-cert.sh foo
+  args:
+    executable: /bin/bash
+    chdir: /root/limani/
+
+- name: Create examples for configspec and devicegroup
+  shell: |
+    kubectl apply -f deploy/cr-samples/edge_v1alpha1_configspec.yaml
+    kubectl apply -f deploy/cr-samples/edge_v1alpha1_devicegroup.yaml
+  args:
+    chdir: /root/limani/
+
+- name: Create an example for inventorydevice
+  shell: |
+    deploy/mk-device.sh foo devicegroup-sample
+  args:
+    chdir: /root/limani/
+
+- name: Find the device server's nodePort
+  shell: |
+    kubectl -n limani-system get svc limani-deviceserver -ojsonpath="{.spec.ports[0].nodePort}"
+  register: device_server_nodeport
+
+- name: Run the agent for once
+  shell: |
+    export PATH=$PATH:/usr/local/go/bin
+    export DEVICE_SERVER=https://127.0.0.1:{{ device_server_nodeport.stdout }}
+    export DEVICE=foo
+    go run cmd/agent/main.go --server $DEVICE_SERVER -ca ./hack/pki/ca/ca.crt -client-cert ./hack/pki/ca/issued/$DEVICE.crt -client-key ./hack/pki/clients/$DEVICE/private/$DEVICE.key -device $DEVICE
+  args:
+    chdir: /root/limani/

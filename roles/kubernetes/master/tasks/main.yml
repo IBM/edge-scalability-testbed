@@ -1,7 +1,11 @@
 ---
 # tasks file for master
+- name: Get public IP address of the node, which is used for extra Subject Alternative Names to use for the API Server serving certificate
+  shell: curl ifconfig.me
+  register: node_public_ip
+
 - name: initialize the cluster
-  shell: kubeadm init --pod-network-cidr=10.244.0.0/16
+  shell: kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-cert-extra-sans={{ node_public_ip.stdout }}
   args:
     chdir: $HOME
     creates: cluster_initialized.txt

@@ -75,7 +75,7 @@
           cidr_ip: "{{ my_public_ip.stdout }}/32"
         - proto: tcp
           ports: 6443
-          cidr_ip: "{{ my_public_ip.stdout }}/32"
+          cidr_ip: "0.0.0.0/0"
         - proto: tcp
           ports:
           - "{{ port_num }}"

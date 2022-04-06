@@ -1,0 +1,103 @@
+---
+# pki
+- name: Distribute pki pack
+  ansible.builtin.copy:
+    src: /tmp/pki.tgz
+    dest: /root/limani/pki.tgz
+
+- name: Extract pki pack
+  args:
+    chdir: /root/limani/
+  shell: |
+    tar xzf pki.tgz
+    rm pki.tgz
+
+- name: Cleanup deviceserver's serving cert before redo the signing
+  args:
+    chdir: /root/limani/
+  shell: |
+    rm -f /root/limani/hack/pki/ca/reqs/server.req
+    rm -f /root/limani/hack/pki/ca/private/server.key
+    rm -f /root/limani/hack/pki/ca/issued/server.crt
+
+- name: Send the cert signing script
+  ansible.builtin.copy:
+    src: sign-deviceserver.sh
+    dest: /root/limani/hack/sign-deviceserver.sh
+    mode: 0755
+
+- name: Modify SANs to include global load balancer
+  ansible.builtin.lineinfile:
+    path: /root/limani/hack/sign-deviceserver.sh
+    regexp: '\"DNS:placeholder\.awsglobalaccelerator\.com\"'
+    line: "\"DNS:{{ global_load_balancer }}\" \\"
+
+- name: Get the public IP address of the node
+  shell: curl ifconfig.me
+  register: node_public_ip
+
+- name: Modify cert signing script
+  ansible.builtin.replace:
+    path: /root/limani/hack/sign-deviceserver.sh
+    regexp: '^MASTER_IP=.*'
+    replace: "MASTER_IP={{ node_public_ip.stdout }}"
+
+- name: Sign the device server cert
+  args:
+    chdir: /root/limani/
+  shell: /root/limani/hack/sign-deviceserver.sh
+
+
+# deployment
+- name: Make sure DynamoDB not deployed
+  ansible.builtin.lineinfile:
+    path: /root/limani/deploy/default/kustomization.yaml
+    state: absent
+    regexp: '- \.\./dynamodb'
+
+- name: Make sure controllers not deployed
+  ansible.builtin.lineinfile:
+    path: /root/limani/deploy/default/kustomization.yaml
+    state: absent
+    regexp: '- \.\./controller'
+
+- name: Delete secret deviceserver-tls  # this is a hack in response to the bug currently in limani
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: deviceserver-tls
+        namespace: limani-system
+
+- name: Deploy deviceserver
+  shell: |
+    export PATH=$PATH:/usr/local/go/bin
+    export AWS_ACCESS_KEY={{ aws_access_key }}
+    export AWS_SECRET_KEY={{ aws_secret_key }}
+    export AWS_REGION={{ aws_region }}
+    make deploy IMG_REGISTRY={{ img_registry }} PLACE={{ place }}
+  args:
+    chdir: /root/limani/
+
+- name: Add Required Packages to Ansible Control Node
+  shell: |
+    apt install python3-pip -y
+    /usr/bin/python3 -m pip install kubernetes
+
+- name: Update nodePort for service limani-deviceserver
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: limani-deviceserver
+        namespace: limani-system
+      spec:
+        ports:
+        - nodePort: "{{ deviceserver_node_port }}"
+          port: 8443
+          protocol: TCP
+          targetPort: 8443

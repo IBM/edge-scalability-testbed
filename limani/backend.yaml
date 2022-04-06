@@ -1,0 +1,19 @@
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  gather_facts: no
+  connection: ssh
+  vars:
+    region: us-east-1
+
+  tasks:
+    - include_role: name=backend
+      vars:
+        foo: bar
+
+    # Ideally this task should be run against the user-facing cluster, but now we're using one single cluster for both user-facing and backend.
+    - name: Prepare DeviceGroup and ConfigSpec objects for deivce simulator
+      shell: |
+        deploy/mk-device-groups-and-configs.sh
+      args:
+        chdir: /root/limani/
