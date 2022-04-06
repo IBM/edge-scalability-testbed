@@ -26,6 +26,12 @@
     dest: /root/limani/hack/sign-deviceserver.sh
     mode: 0755
 
+- name: Modify SANs to include global load balancer
+  ansible.builtin.lineinfile:
+    path: /root/limani/hack/sign-deviceserver.sh
+    regexp: '\"DNS:placeholder\.awsglobalaccelerator\.com\"'
+    line: "\"DNS:{{ global_load_balancer }}\" \\"
+
 - name: Get the public IP address of the node
   shell: curl ifconfig.me
   register: node_public_ip

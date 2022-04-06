@@ -27,7 +27,7 @@ easyrsa --subject-alt-name="IP:${MASTER_IP},"\
 "DNS:limani-deviceserver.limani-system.svc,"\
 "DNS:limani-deviceserver.limani-system.svc.cluster,"\
 "DNS:limani-deviceserver.limani-system.svc.cluster.local,"\
-"DNS:a5a1f692702012136.awsglobalaccelerator.com" \
+"DNS:placeholder.awsglobalaccelerator.com" \
 --days=10000 \
 build-server-full server nopass
 
