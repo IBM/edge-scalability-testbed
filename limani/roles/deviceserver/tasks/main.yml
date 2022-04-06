@@ -61,6 +61,20 @@
     state: absent
     regexp: '- \.\./controller'
 
+- name: Add Required Packages
+  shell: |
+    apt install python3-pip -y
+    /usr/bin/python3 -m pip install kubernetes
+
+- name: Create limani-system namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: limani-system
+
 - name: Delete secret deviceserver-tls  # this is a hack in response to the bug currently in limani
   kubernetes.core.k8s:
     state: absent
@@ -80,11 +94,6 @@
     make deploy IMG_REGISTRY={{ img_registry }} PLACE={{ place }}
   args:
     chdir: /root/limani/
-
-- name: Add Required Packages to Ansible Control Node
-  shell: |
-    apt install python3-pip -y
-    /usr/bin/python3 -m pip install kubernetes
 
 - name: Update nodePort for service limani-deviceserver
   kubernetes.core.k8s:

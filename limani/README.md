@@ -21,5 +21,5 @@ This creates a 'credentials' container images to be consumed by the device simul
 
 3. Finish the configuration of the deviceserver clusters. For example:
 ```shell
-ansible-playbook -i .data/hosts_deviceserver1 limani/deviceserver.yaml -e "img_registry=$DH place=aws aws_region=$AWS_REGION aws_access_key=$AWS_ACCESS_KEY aws_secret_key=$AWS_SECRET_KEY global_load_balancer=some.aws.dns.name"
+ansible-playbook -i .data/hosts_deviceserver1 limani/deviceserver.yaml -e "img_registry=$DH place=aws aws_region=$AWS_REGION aws_access_key=$AWS_ACCESS_KEY aws_secret_key=$AWS_SECRET_KEY global_load_balancer=my-glb.dns.name"
 ```

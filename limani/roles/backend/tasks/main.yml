@@ -69,9 +69,13 @@
     aws sts get-caller-identity --query "Account" --output text
   register: aws_account_id
 
+- name: Compose the name of the credentials container image
+  set_fact:
+    credentials_image: "{{ aws_account_id.stdout }}.dkr.ecr.{{ region }}.amazonaws.com/limani/credentials"
+
 - name: Build the credentials container image
   shell: |
-    docker build -t {{ aws_account_id.stdout }}.dkr.ecr.{{ region }}.amazonaws.com/limani/credentials -f deploy/Dockerfile_Credentials .
+    docker build -t {{ credentials_image }} -f deploy/Dockerfile_Credentials .
   args:
     chdir: /root/limani/
 
@@ -89,8 +93,11 @@
 
 - name: Push the credentials container image to AWS ECR
   shell: |
-    docker push {{ aws_account_id.stdout }}.dkr.ecr.{{ region }}.amazonaws.com/limani/credentials
+    docker push {{ credentials_image }}
 
+- name: Show the credentials container image
+  debug:
+    msg: "Container image for credentials: {{ credentials_image }}"
 
 # deployment
 - name: Login to registry
