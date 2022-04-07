@@ -4,9 +4,7 @@
   gather_facts: no
   connection: ssh
   vars:
-    region: us-east-2
+    aws_region_dynamodb: us-east-1
 
   tasks:
     - include_role: name=deviceserver
-      vars:
-        foo: bar
