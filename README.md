@@ -1,11 +1,19 @@
-Ansible automation for k8s-based edge testbed on AWS EC2
---------------------------------------------------------
-
-### Overview
-A very high level overview of the automated components is [here](overview.txt).
+A scalable Kubernetes-based testbed for edge use cases
+------------------------------------------------------
 
 ### Requirements
-Requirement of the `ec2instances` role is specified in its [README](roles/ec2instances/README.md).
+AWS EC2 is the environment used to setup the testbed. So AWS credentials are required.
+They can be set by environment variables, e.g. `AWS_ACCESS_KEY` and `AWS_SECRET_KEY`.
+
+### Overview
+A very high level overview of the automated components of the testbed is shown [here](overview.txt).
+In a nutshell, the testbed consists of (from bottom to top):
+- Networking and stroage resources from AWS;
+- AWS EC2 instances;
+- Kubernetes cluster(s);
+- Workload(s).
+The [overview](overview.txt) shows a [virtual hub](https://github.com/pdettori/kealm) and a set of [mock clusters](https://github.com/pdettori/cymba) as the workloads.
+But the workloads are not limited to this specific use case.
 
 ### Quick Start
 A one-click bootstrapping of all the [components](overview.txt) can be done by running
