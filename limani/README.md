@@ -8,8 +8,8 @@ To run the automation for limani, these items are required:
 - `img_registry_pswd` which is used to push limani's containers images;
 - AWS access key ID and AWS secret access key.
 
-### Deploy limani AWS
-Given the k8s cluster is ready, we can deploy limani (at geo-distributed web scale) on AWS, by following these steps:
+### Deploy limani on AWS
+Given the k8s clusters are ready, we can deploy limani (at geo-distributed web scale) on AWS, by following these steps:
 1. In the root directory of this project, run the playbook to install the base of limani on each of the k8s clusters, including the backend one and all deviceserver ones.
 ```shell
 ansible-playbook -i .data/hosts_limani limani/base.yaml -e "github_token=$GHTOKEN place=aws aws_access_key=$AWS_ACCESS_KEY aws_secret_key=$AWS_SECRET_KEY"
@@ -23,5 +23,5 @@ This creates a 'credentials' container images to be consumed by the device simul
 
 3. Finish the setup on the deviceserver clusters. For example:
 ```shell
-ansible-playbook -i .data/hosts_deviceserver1 limani/deviceserver.yaml -e "img_registry=$DH place=aws aws_access_key=$AWS_ACCESS_KEY aws_secret_key=$AWS_SECRET_KEY global_load_balancer=my-glb.dns.name"
+ansible-playbook -i .data/hosts_deviceserver1 limani/deviceserver.yaml -e "img_registry=$DH place=aws aws_access_key=$AWS_ACCESS_KEY aws_secret_key=$AWS_SECRET_KEY"
 ```

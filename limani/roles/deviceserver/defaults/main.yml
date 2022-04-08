@@ -1,4 +1,3 @@
 ---
 # defaults file for deviceserver
 deviceserver_node_port: 31033
-global_load_balancer: "real.awsglobalaccelerator.com"
