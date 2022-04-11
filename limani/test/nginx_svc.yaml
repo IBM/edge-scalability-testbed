@@ -8,7 +8,7 @@ spec:
   type: NodePort
   ports:
     - port: 80
-      nodePort: 30080
+      nodePort: 31033
       name: http
   selector:
       app: nginx

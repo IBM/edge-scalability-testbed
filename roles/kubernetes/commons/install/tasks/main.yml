@@ -1,6 +1,10 @@
 ---
 - name: Wait for target connection to become reachable/usable
   wait_for_connection:
+    delay: 0
+    connect_timeout: 5
+    sleep: 5
+    timeout: 600
 
 - name: install Docker
   shell: |

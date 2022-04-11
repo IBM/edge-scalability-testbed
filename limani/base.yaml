@@ -4,12 +4,13 @@
   become: yes
   gather_facts: yes
   connection: ssh
-  vars:
-    aws_region_dynamodb: us-east-1
 
   tasks:
     - fail: msg="github_token is required"
       when: github_token is undefined
+    
+    - fail: msg="aws_region is required"
+      when: aws_region is undefined
 
     - fail: msg="aws_access_key is required"
       when: aws_access_key is undefined
@@ -99,7 +100,7 @@
       with_dict:
         aws_access_key_id: "{{ aws_access_key | default('dummy') }}"
         aws_secret_access_key: "{{ aws_secret_key | default('dummy') }}"
-        region: "{{ aws_region_dynamodb }}"
+        region: "{{ aws_region | default('us-east-1') }}"
         format: "yaml"
 
     - name: Get the public IP address of the node

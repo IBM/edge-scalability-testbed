@@ -11,7 +11,6 @@
     num_replicas: "{{ replicas_count | default(1) }}"
   tasks:
     - include_vars: "../.data/{{ region }}_vpc_helper_vars.yaml"
-    - include_vars: "../.data/global_accelerator_vars.yaml"
 
     - name: Create a log group
       community.aws.cloudwatchlogs_log_group:
@@ -40,9 +39,9 @@
           - --namespace=default
           - --ca-cert-file=/tls/ca.crt
           - --ca-key-file=/tls/ca.key
-          - -device-extra-labels=region={{ region }}
+          - -device-extra-labels=region=us-east-1
           - --metrics-bind-address=0.0.0.0:8080
-          - --device-server=https://{{ AcceleratorDNS }}:31033
+          - --device-server=https://a8acbc4b70edc25f0.awsglobalaccelerator.com:31033
           - --fetch-spec-interval=60s
           - --status-update-interval=60s
           - --num=100

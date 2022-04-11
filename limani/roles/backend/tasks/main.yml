@@ -71,7 +71,7 @@
 
 - name: Compose the name of the credentials container image
   set_fact:
-    credentials_image: "{{ aws_account_id.stdout }}.dkr.ecr.{{ aws_region_ecr }}.amazonaws.com/limani/credentials"
+    credentials_image: "{{ aws_account_id.stdout }}.dkr.ecr.{{ region }}.amazonaws.com/limani/credentials"
 
 - name: Build the credentials container image
   shell: |
@@ -85,11 +85,11 @@
 
 - name: Login AWS ECR
   shell: |
-    aws ecr get-login-password --region {{ aws_region_ecr }} | docker login --username AWS --password-stdin {{ aws_account_id.stdout }}.dkr.ecr.{{ aws_region_ecr }}.amazonaws.com
+    aws ecr get-login-password --region {{ region }} | docker login --username AWS --password-stdin {{ aws_account_id.stdout }}.dkr.ecr.{{ region }}.amazonaws.com
 
 - name: Create Repo for the credentials container image on AWS ECR
   shell: |
-    aws ecr create-repository --repository-name limani/credentials --region {{ aws_region_ecr }} 2>/dev/null | true
+    aws ecr create-repository --repository-name limani/credentials --region {{ region }} 2>/dev/null | true
 
 - name: Push the credentials container image to AWS ECR
   shell: |
@@ -116,7 +116,7 @@
     export PATH=$PATH:/usr/local/go/bin
     export AWS_ACCESS_KEY={{ aws_access_key }}
     export AWS_SECRET_KEY={{ aws_secret_key }}
-    export AWS_REGION={{ aws_region_dynamodb }}
+    export AWS_REGION={{ aws_region }}
     make deploy IMG_REGISTRY={{ img_registry }} PLACE={{ place }}
   args:
     chdir: /root/limani/
