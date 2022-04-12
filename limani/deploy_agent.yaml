@@ -25,7 +25,7 @@
             ports:
             - "{{ port_num }}"
             cidr_ip: 0.0.0.0/0
-            rule_desc: allow all on port 80
+            rule_desc: allow all on target port
       register: result_sg
 
     - name: Debug Security Group
