@@ -37,7 +37,14 @@
       ansible.builtin.debug:
         msg: "{{ glt_listener }}"
 
+
+    - name: Create a directory to persist Global Accelerator data if it does not exist
+      ansible.builtin.file:
+        path: ../.data
+        state: directory
+        mode: '0755'
+
     - name: Create vars file to help with deletion of AWS Global Accelerator
       ansible.builtin.copy:
-        content: "accelerator_arn: '{{ glt_accelerator.Accelerator.AcceleratorArn }}'\nlistener_arn: '{{ glt_listener.Listener.ListenerArn }}'"
+        content: "AcceleratorDNS: '{{ glt_accelerator.Accelerator.DnsName }}'\naccelerator_arn: '{{ glt_accelerator.Accelerator.AcceleratorArn }}'\nlistener_arn: '{{ glt_listener.Listener.ListenerArn }}'"
         dest: "../.data/global_accelerator_vars.yaml"
