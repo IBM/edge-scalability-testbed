@@ -1,0 +1,20 @@
+# Scaling the number of clusters
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  vars:
+    nginx_svc: "{{lookup('file', './nginx_svc.yaml') }}"
+  tasks:
+    - name: Deploy Nginx workload
+      become: yes
+      shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/controllers/nginx-deployment.yaml
+
+    - name: Copy using inline content
+      ansible.builtin.copy:
+        content: "{{ nginx_svc }}"
+        dest: "/tmp/nginx_svc.yaml"
+        mode: 0777
+
+    - name: Deploy Nginx Service
+      become: yes
+      shell: kubectl apply -f "/tmp/nginx_svc.yaml"
