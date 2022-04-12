@@ -25,11 +25,6 @@
       path: ".data/ec2_instances_{{ cluster_name }}.json"
       state: absent
 
-  - name: Purge host data
-    ansible.builtin.file:
-      path: ".data/hosts_{{ cluster_name }}"
-      state: absent
-
   - name: Show instance data
     debug:
       msg:

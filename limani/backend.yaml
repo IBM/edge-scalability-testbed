@@ -4,12 +4,11 @@
   gather_facts: no
   connection: ssh
   vars:
-    region: us-east-1
+    aws_region_ecr: us-east-1
+    aws_region_dynamodb: us-east-1
 
   tasks:
     - include_role: name=backend
-      vars:
-        foo: bar
 
     # Ideally this task should be run against the user-facing cluster, but now we're using one single cluster for both user-facing and backend.
     - name: Prepare DeviceGroup and ConfigSpec objects for deivce simulator

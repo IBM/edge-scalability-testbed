@@ -26,11 +26,22 @@
     dest: /root/limani/hack/sign-deviceserver.sh
     mode: 0755
 
+- name: Get variables for the global accelerator
+  include_vars:
+    file: "../.data/global_accelerator_vars.yaml"
+    name: global_accelerator_vars
+  failed_when: false
+
+- name: Get the DNS name for the global accelerator
+  set_fact:
+    global_accelerator_dns: "{{ global_accelerator_vars.AcceleratorDNS }}"
+  when: global_accelerator_vars.AcceleratorDNS is defined
+
 - name: Modify SANs to include global load balancer
   ansible.builtin.lineinfile:
     path: /root/limani/hack/sign-deviceserver.sh
     regexp: '\"DNS:placeholder\.awsglobalaccelerator\.com\"'
-    line: "\"DNS:{{ global_load_balancer }}\" \\"
+    line: "\"DNS:{{ global_accelerator_dns | default('somewhere.awsglobalaccelerator.com') }}\" \\"
 
 - name: Get the public IP address of the node
   shell: curl ifconfig.me
@@ -90,7 +101,7 @@
     export PATH=$PATH:/usr/local/go/bin
     export AWS_ACCESS_KEY={{ aws_access_key }}
     export AWS_SECRET_KEY={{ aws_secret_key }}
-    export AWS_REGION={{ aws_region }}
+    export AWS_REGION={{ aws_region_dynamodb }}
     make deploy IMG_REGISTRY={{ img_registry }} PLACE={{ place }}
   args:
     chdir: /root/limani/
