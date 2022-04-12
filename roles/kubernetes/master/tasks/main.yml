@@ -24,6 +24,11 @@
     remote_src: yes
     owner: root
 
+- name: Configure master node to accept pods workloads
+  become: yes
+  shell: kubectl taint nodes --all node-role.kubernetes.io/master-
+  when: singleNode | bool
+
 - name: install Pod network
   become: yes
   shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml 
@@ -35,7 +40,6 @@
   copy:
     src: "{{ role_path }}/files/local-path-storage.yaml"
     dest: /tmp/local-path-storage.yaml 
-
 
 - name: install PV provisioner
   become: yes
