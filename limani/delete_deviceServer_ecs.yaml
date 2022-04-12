@@ -10,8 +10,8 @@
     - name: Load a variable files
       include_vars:  "{{ item }}"
       loop:
-        - ".data/{{ region }}_deviceServer_helper_vars.yaml"
-        - ".data/{{ region }}_network_elb_helper_vars.yaml"
+        - "../.data/{{ region }}_deviceServer_helper_vars.yaml"
+        - "../.data/{{ region }}_network_elb_helper_vars.yaml"
         
 
     - name: Set ECS service task = 0
@@ -79,5 +79,5 @@
 
     - name: Remove file deletion_helper_vars.yaml
       ansible.builtin.file:
-        path: ".data/{{ region }}_deviceServer_helper_vars.yaml"
+        path: "../.data/{{ region }}_deviceServer_helper_vars.yaml"
         state: absent
