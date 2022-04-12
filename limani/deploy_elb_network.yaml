@@ -4,7 +4,7 @@
   vars:
     region: "{{ region }}"
     cluster_name: "{{ ec2_cluster_name | default('limani') }}"
-    port_num: "{{ port_num }}"
+    port_num: 31033
     ecs_device: no
   tasks:
     - include_vars: "../.data/{{ region }}_vpc_helper_vars.yaml"
@@ -21,11 +21,18 @@
         private_ips: "{{ ec2_instances | community.general.json_query('instances[*].private_ip') }}"
       when: not ecs_device
 
-    - name: Debug Message Target Group
-      ansible.builtin.debug:
-        msg: "{{ private_ips }}"
+
+    - name: Create and Add items to dictionary
+      set_fact: 
+          target_list: "{{ target_list | default([]) + [{ 'Id' : item, 'Port' : port_num | int }] }}"
+      with_items: 
+        - "{{ private_ips }}"
       when: not ecs_device
 
+    - name: Debug Message Target Group
+      ansible.builtin.debug:
+        msg: "{{ target_list }}"
+      when: not ecs_device
 
     - name: Create a target group with a default health check
       community.aws.elb_target_group:
@@ -35,15 +42,10 @@
         target_type: ip
         port: "{{ port_num }}"
         vpc_id:  "{{ vpc_id }}"
-        targets:
-          - Id: "{{ private_ips[0] }}"
-            Port: "{{ port_num | int }}"
-          - Id: "{{ private_ips[1] }}"
-            Port: "{{ port_num | int }}"
+        targets: "{{ target_list }}"
         state: present
       register: target_group_output
       when: not ecs_device
-
 
     - name: Debug Message Target Group
       ansible.builtin.debug:
@@ -104,6 +106,3 @@
         content: "region: {{ region }}\ncluster_name: {{ cluster_name }}\nvpc_id: {{ vpc_id }}\ntargetGroupArn: {{ ecs_target_group_output.target_group_arn}}\nendpoint_arn: {{ elb_network_output.load_balancer_arn }}"
         dest: "../.data/{{ region }}_network_elb_helper_vars.yaml"
       when: ecs_device | bool
-
-
-
