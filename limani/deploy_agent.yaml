@@ -9,9 +9,28 @@
     devicesimulator_image: "{{ devicesimulator_image }}"
     credentials_image: "{{ credentials_image }}"
     num_replicas: "{{ replicas_count | default(1) }}"
+    port_num: 80
   tasks:
     - include_vars: "../.data/{{ region }}_vpc_helper_vars.yaml"
     - include_vars: "../.data/global_accelerator_vars.yaml"
+
+    - name: Creating security group rule descriptions
+      amazon.aws.ec2_group:
+        name: "{{ task_name }}-securityGroup"
+        description: "sg for ecs task {{ task_name }}"
+        vpc_id:  "{{ vpc_id }}"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            ports:
+            - "{{ port_num }}"
+            cidr_ip: 0.0.0.0/0
+            rule_desc: allow all on port 80
+      register: result_sg
+
+    - name: Debug Security Group
+      ansible.builtin.debug:
+        msg: "{{ result_sg }}"
 
     - name: Create a log group
       community.aws.cloudwatchlogs_log_group:
@@ -33,6 +52,10 @@
         - name: "{{ container_name }}"
           image: "{{ devicesimulator_image }}" 
           essential: true
+          portMappings:
+          - containerPort: "{{ port_num }}"
+            hostPort: "{{ port_num }}"
+            protocol: "tcp"
           entryPoint:
           - /devicesimulator
           command:
@@ -85,6 +108,8 @@
           assign_public_ip: no
           subnets:
           - "{{ private_subnet_id }}"
+          security_groups:
+          -  "{{ result_sg.group_id }}"
       register: ecs_service_output
 
     - name: Debug ECS Service
