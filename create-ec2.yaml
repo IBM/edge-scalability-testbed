@@ -45,14 +45,12 @@
         availability-zone: "{{ aws_default_vpc_az }}"
       region: "{{ aws_region }}"
     register: subnets_info
-    when: default_vpc | bool 
-
+    when: default_vpc | bool
 
   - name: Print all subnets available facts
     ansible.builtin.debug:
       var: subnets_info
-    when: default_vpc | bool 
- 
+    when: default_vpc | bool
 
   - name: Read VPC configuration data
     include_vars: ".data/{{ aws_region }}_vpc_helper_vars.yaml"

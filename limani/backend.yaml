@@ -16,3 +16,8 @@
         deploy/mk-device-groups-and-configs.sh
       args:
         chdir: /root/limani/
+
+    - name: Setup monitoring
+      include_role: name=monitoring
+      vars:
+        component: backend

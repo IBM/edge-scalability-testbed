@@ -72,11 +72,6 @@
     state: absent
     regexp: '- \.\./controller'
 
-- name: Add Required Packages
-  shell: |
-    apt install python3-pip -y
-    /usr/bin/python3 -m pip install kubernetes
-
 - name: Create limani-system namespace
   kubernetes.core.k8s:
     state: present

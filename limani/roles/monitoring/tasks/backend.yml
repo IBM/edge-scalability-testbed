@@ -1,0 +1,38 @@
+- name: Get kube-prometheus code
+  shell: |
+    rm -rf /root/kube-prometheus
+    git -C /root/ clone https://github.com/prometheus-operator/kube-prometheus.git
+
+- name: Quickstart kube-prometheus
+  args:
+    chdir: /root/kube-prometheus
+  shell: |
+    kubectl apply --server-side -f manifests/setup
+    until kubectl get servicemonitors --all-namespaces ; do date; sleep 1; echo ""; done
+    kubectl apply -f manifests/
+
+- name: Scrape limani
+  args:
+    chdir: /root/limani/
+  shell: |
+    make have-scraping
+
+- name: Open nodePort for svc/grafana  # TODO: security group for the nodePort
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: grafana
+        namespace: monitoring
+      spec:
+        type: NodePort
+        ports:
+        - nodePort: 30000
+          port: 3000
+          targetPort: 3000
+
+- name: Show the port-forward commmand
+  debug:
+    msg: Use 'kubectl --namespace monitoring port-forward svc/grafana 3000' before access Grafana locally
