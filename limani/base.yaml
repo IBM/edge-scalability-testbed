@@ -77,6 +77,11 @@
         chdir: /root/limani/
       failed_when: false
 
+    - name: Install python package kubernetes
+      shell: |
+        apt install python3-pip -y
+        /usr/bin/python3 -m pip install kubernetes
+
     - name: Install unzip 
       shell: |
         apt update
