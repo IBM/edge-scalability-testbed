@@ -1,0 +1,4 @@
+- name: Get kube-prometheus code
+  shell: |
+    rm -rf /root/kube-prometheus
+    git -C /root/ clone https://github.com/prometheus-operator/kube-prometheus.git
