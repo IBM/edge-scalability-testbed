@@ -79,6 +79,12 @@
   args:
     chdir: /root/limani/
 
+- name: Fetch the backend cluster's kubeconfig file
+  ansible.builtin.fetch:
+    src: /root/limani/kube.conf
+    dest: ../.data/limani_backend_kubeconfig
+    flat: true
+
 - name: Cleanup the backend cluster's kubeconfig file after building the credentials container image
   shell: |
     rm -f /root/limani/kube.conf

@@ -21,6 +21,8 @@ ansible-playbook -i .data/hosts_limani limani/backend.yaml -e "img_registry=$DH 
 ```
 This creates a 'credentials' container images to be consumed by the device simulators.
 
+A kubeconfig file for the backend cluster is created by the playbook at `.data/limani_backend_kubeconfig`.
+
 3. Finish the setup on the deviceserver clusters. For example:
 ```shell
 ansible-playbook -i .data/hosts_deviceserver1 limani/deviceserver.yaml -e "img_registry=$DH place=aws aws_access_key=$AWS_ACCESS_KEY aws_secret_key=$AWS_SECRET_KEY"
