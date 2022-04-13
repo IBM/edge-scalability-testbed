@@ -8,3 +8,6 @@
 
   tasks:
     - include_role: name=deviceserver
+
+    - name: Setup monitoring
+      include_role: name=monitoring

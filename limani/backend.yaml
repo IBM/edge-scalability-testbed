@@ -19,5 +19,3 @@
 
     - name: Setup monitoring
       include_role: name=monitoring
-      vars:
-        component: backend
