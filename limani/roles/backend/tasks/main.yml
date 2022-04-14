@@ -50,7 +50,7 @@
     src: Dockerfile_Credentials
     dest: /root/limani/deploy/Dockerfile_Credentials
 
-- name: Prepare the backend cluster's kubeconfig file for the credentials container image
+- name: Prepare the kubeconfig file for the credentials container image
   shell: |
     cp /root/.kube/config /root/limani/kube.conf
 
@@ -79,13 +79,13 @@
   args:
     chdir: /root/limani/
 
-- name: Fetch the backend cluster's kubeconfig file
+- name: Fetch the kubeconfig file
   ansible.builtin.fetch:
     src: /root/limani/kube.conf
     dest: ../.data/limani_backend_kubeconfig
     flat: true
 
-- name: Cleanup the backend cluster's kubeconfig file after building the credentials container image
+- name: Remove the kubeconfig file
   shell: |
     rm -f /root/limani/kube.conf
 
@@ -104,6 +104,7 @@
 - name: Show the credentials container image
   debug:
     msg: "Container image for credentials: {{ credentials_image }}"
+
 
 # deployment
 - name: Login to registry

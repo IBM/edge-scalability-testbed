@@ -1,5 +1,5 @@
 ---
-# pki
+# pki and kubeconfig
 - name: Distribute pki pack
   ansible.builtin.copy:
     src: /tmp/pki.tgz
@@ -57,6 +57,26 @@
   args:
     chdir: /root/limani/
   shell: /root/limani/hack/sign-deviceserver.sh
+
+- name: Prepare the kubeconfig file
+  shell: |
+    cp /root/.kube/config /root/limani/kube.conf
+
+- name: Replace apiserver's IP address in the kubeconfig file
+  ansible.builtin.replace:
+    path: /root/limani/kube.conf
+    regexp: '^\s+server:.*'
+    replace: "    server: https://{{ node_public_ip.stdout }}:6443"
+
+- name: Fetch the kubeconfig file
+  ansible.builtin.fetch:
+    src: /root/limani/kube.conf
+    dest: ../.data/limani_ds_{{ node_public_ip.stdout }}_kubeconfig
+    flat: true
+
+- name: Remove the kubeconfig file
+  shell: |
+    rm -f /root/limani/kube.conf
 
 
 # deployment
