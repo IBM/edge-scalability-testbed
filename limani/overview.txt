@@ -1,6 +1,6 @@
  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
  │               │ │               │ │               │ │               │
- │ (user-facing) │ │    (local)    │ │(device-facing)│ │    device     │
+ │ (user-facing) │ │               │ │(device-facing)│ │    device     │
  │  controllers  │ │   dynamodb    │ │  deviceserver │ │   agent(s) /  │
  │               │ │               │ │               │ │  simulator(s) │
  ├───────────────┤ ├───────────────┤ ├───────────────┤ ├───────────────┤
