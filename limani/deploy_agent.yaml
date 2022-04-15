@@ -68,7 +68,7 @@
           - --device-server=https://{{ AcceleratorDNS }}:31033
           - --fetch-spec-interval=60s
           - --status-update-interval=60s
-          - --num=400
+          - --num=500
           - -zap-time-encoding=rfc3339nano
           - -zap-log-level=10
           volumesFrom:
