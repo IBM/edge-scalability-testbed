@@ -118,5 +118,5 @@
 
     - name: Create vars file to help with deletion of resources
       ansible.builtin.copy:
-        content: "cluster_name: {{ cluster_ecs_name }}\ntask_name: {{ task_name }}\ncontainerName: {{ container_name }}"
+        content: "cluster_name: {{ cluster_ecs_name }}\ntask_name: {{ task_name }}\ncontainerName: {{ container_name }}\nsg_id: {{ result_sg.group_id }}"
         dest: "../.data/{{ region }}_{{ cluster_ecs_name }}_agent_helper_vars.yaml"
