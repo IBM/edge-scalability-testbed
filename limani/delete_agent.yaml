@@ -4,10 +4,14 @@
   gather_facts: no
   vars:
     region: "{{ region }}"
-    cluster_ecs_name: "{{ ecs_cluster_name  | default('agent_simulator') }}"
+    cluster_ecs_name: "{{ ecs_cluster_name  | default('devicesimulator') }}"
     task_revision: "{{ task_rev | default(1) }}"
   tasks:
-    - include_vars: "../.data/{{ region }}_{{ cluster_ecs_name }}_agent_helper_vars.yaml"
+    - name: Load a variable files
+      include_vars:  "{{ item }}"
+      loop:
+        - "../.data/{{ region }}_vpc_helper_vars.yaml"
+        - "../.data/{{ region }}_{{ cluster_ecs_name }}_agent_helper_vars.yaml"
 
     - name: Set ECS service task = 0
       community.aws.ecs_service:
@@ -59,6 +63,17 @@
         name: "{{ cluster_ecs_name }}"
         region: "{{ region }}"
         state: absent
+
+    - name: Sleep for 60 seconds for the deletion of the ECS Cluster and timeout
+      wait_for:
+        timeout: 60
+
+    - name: Delete security group by its id
+      amazon.aws.ec2_group:
+        region: "{{ region }}"
+        group_id: "{{ sg_id }}"
+        vpc_id: "{{ vpc_id }}"
+        state: absent 
 
     - name: Remove file deletion_helper_vars.yaml
       ansible.builtin.file:
