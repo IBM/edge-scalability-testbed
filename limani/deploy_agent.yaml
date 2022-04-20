@@ -59,18 +59,23 @@
           entryPoint:
           - /devicesimulator
           command:
+          # kubernetes related config
           - --kubeconf=/kube/kube.conf
           - --namespace=default
+          # inventory device related parameters
           - --ca-cert-file=/tls/ca.crt
           - --ca-key-file=/tls/ca.key
           - -device-extra-labels=region={{ region }}
+          # infrastructure
           - --metrics-bind-address=0.0.0.0:8080
           - --device-server=https://{{ AcceleratorDNS }}:31033
-          - --fetch-spec-interval=60s
-          - --status-update-interval=60s
-          - --num=500
+          # simulation parameters
+          - --fetch-spec-interval=2h
+          - --status-update-interval=2h
+          - --num=50000
+          # log sanity
           - -zap-time-encoding=rfc3339nano
-          - -zap-log-level=10
+          - -zap-log-level=4
           volumesFrom:
           - sourceContainer: credentials
           logConfiguration:
@@ -83,8 +88,8 @@
           essential: false
           image: "{{ credentials_image }}"
         launch_type: FARGATE
-        cpu: 512
-        memory: 1GB
+        cpu: 1024
+        memory: 2GB
         state: present
         network_mode: awsvpc
         execution_role_arn: ecsTaskExecutionRole
