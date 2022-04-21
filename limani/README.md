@@ -76,7 +76,7 @@ Given a target region (e.g., us-east-2) deploy the simulated devices workload by
 ````
 
 
-### Destroy the deployments
+### Destroy the Infrastructure
 
 Given a target region (e.g., us-east-2) destroy the infrastructure by following these steps:
 
@@ -117,4 +117,5 @@ ansible-playbook limani/delete_vpc_infra.yaml -e "region=us-east-2"
 ````
 
 
+7. Delete Dynamo tables by hand (automation coming soon!)
 
