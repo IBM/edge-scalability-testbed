@@ -72,7 +72,7 @@ Given a target region (e.g., us-east-2) deploy the simulated devices workload by
 
 3. Deploy the simulated devices worklod
 ```shell
- ansible-playbook limani/deploy_agent.yaml -e "region=us-east-2  devicesimulator_image='junatibm/devicesimulator'  credentials_image='322123457921.dkr.ecr.us-east-1.amazonaws.com/limani/credentials'"
+ ansible-playbook limani/deploy_agent.yaml -e "region=us-east-2  devicesimulator_image='<example>/devicesimulator'  credentials_image=<aws_ecr>/limani/credentials'"
 ````
 
 
