@@ -47,7 +47,7 @@
   shell: curl ifconfig.me
   register: node_public_ip
 
-- name: Modify cert signing script
+- name: Modify SANs to include node's public IP
   ansible.builtin.replace:
     path: /root/limani/hack/sign-deviceserver.sh
     regexp: '^MASTER_IP=.*'
