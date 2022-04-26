@@ -20,7 +20,7 @@
     - name: Get limani code
       shell: |
         rm -rf /root/limani
-        git -C /root/ clone https://{{ github_token }}@github.com/redhat-et/limani.git
+        git -C /root/ clone https://{{ github_token }}@github.com/edge-experiments/limani.git
 
     - name: Create bin/ for limani
       ansible.builtin.file:
