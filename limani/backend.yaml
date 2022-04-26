@@ -4,7 +4,7 @@
   gather_facts: no
   connection: ssh
   vars:
-    aws_region_ecr: us-east-1
+    aws_region_ecr: us-west-2
     aws_region_dynamodb: us-west-2
 
   tasks:
