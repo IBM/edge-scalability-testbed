@@ -6,7 +6,8 @@ To run the automation for limani, these items are required:
 - Github credentials to get limani code;
 - `img_registry` which maps to limani's `IMG_REGISTRY`;
 - `img_registry_pswd` which is used to push limani's containers images;
-- AWS access key ID and AWS secret access key.
+- AWS access key ID and AWS secret access key;
+- AWS CLI installed locally.
 
 
 ### Deploy Limani Global Infrastructure on AWS
@@ -29,7 +30,7 @@ ansible-playbook -i .data/hosts_us-east-2 deploy-worker.yaml
 3. Create Global Accelerator (aka Global Load Balancer)
 ```shell
  ansible-playbook  limani/deploy_global_accelerator.yaml -e "accelerator_name=LimaniAccelerator port_num=31033"
-````
+```
 
 
 ### Deploy limani on AWS
