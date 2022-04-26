@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    aws_region_ecr: us-east-1
+    aws_region_dynamodb: us-west-2
+  tasks:
+
+  - name: Delete the credentials repository from ECR
+    shell: |
+      aws ecr delete-repository --region {{ aws_region_ecr }} --repository-name limani/credentials --force
+
+  - name: Delete the DynamoDB tables
+    shell: |
+      aws dynamodb delete-table --region {{ aws_region_dynamodb }} --table-name deviceConfigSpecs && \
+      aws dynamodb delete-table --region {{ aws_region_dynamodb }} --table-name deviceConfigStatuses
