@@ -5,7 +5,7 @@
   gather_facts: yes
   connection: ssh
   vars:
-    aws_region_dynamodb: us-east-1
+    aws_region_dynamodb: us-west-2
 
   tasks:
     - fail: msg="github_token is required"

@@ -117,4 +117,3 @@ ansible-playbook limani/delete_vpc_infra.yaml -e "region=us-east-2"
 ````
 
 7. Delete DynamoDB tables and ECR `limani/credentials` repository by hand (e.g. from the AWS web console or AWS CLI). Automation is coming soon.
-Their regions are specified in the limani/backend.yaml playbook, which are by default us-east-1.
