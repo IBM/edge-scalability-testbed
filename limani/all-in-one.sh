@@ -8,7 +8,7 @@ set -x
 ##################################
 
 # ansible-playbook limani/deploy_vpc_infra.yaml -e "vpc_name=limani_pvc region=us-east-1 az_x=us-east-1b az_y=us-east-1c"
-# ansible-playbook limani/deploy_agent.yaml -e "region=us-east-1  devicesimulator_image='junatibm/devicesimulator'  credentials_image='322123457921.dkr.ecr.us-east-1.amazonaws.com/limani/credentials'"
+# ansible-playbook limani/deploy_agent.yaml -e "region=us-east-1  devicesimulator_image='<img_registry>/devicesimulator'  credentials_image='<aws_account_id>.dkr.ecr.us-west-2.amazonaws.com/limani/credentials'"
 
 
 ##################################
@@ -25,7 +25,7 @@ set -x
 
 # # ansible-playbook -i .data/hosts_us-east-2 limani/test/nginx_test_workload.yaml
 
-# ansible-playbook limani/deploy_agent.yaml -e "region=us-east-2  devicesimulator_image='junatibm/devicesimulator'  credentials_image='322123457921.dkr.ecr.us-east-1.amazonaws.com/limani/credentials'"
+# ansible-playbook limani/deploy_agent.yaml -e "region=us-east-2  devicesimulator_image='<img_registry>/devicesimulator'  credentials_image='<aws_account_id>.dkr.ecr.us-west-2.amazonaws.com/limani/credentials'"
 
 # ansible-playbook limani/deploy_elb_network.yaml -e "region=us-east-2  port_num=31033"
 # #ansible-playbook limani/deploy_agent.yaml -e "region=us-east-2 devicesimulator_image='nginx:latest' replicas_count=2"
@@ -66,7 +66,7 @@ ansible-playbook limani/deploy_vpc_infra.yaml -e "vpc_name=limani_vpc region=us-
 
 # ansible-playbook -i .data/hosts_us-west-2 limani/test/nginx_test_workload.yaml 
 
-ansible-playbook limani/deploy_agent.yaml -e "region=us-west-2  devicesimulator_image='junatibm/devicesimulator'  credentials_image='322123457921.dkr.ecr.us-east-1.amazonaws.com/limani/credentials'"
+ansible-playbook limani/deploy_agent.yaml -e "region=us-west-2  devicesimulator_image='<img_registry>/devicesimulator'  credentials_image='<aws_account_id>.dkr.ecr.us-west-2.amazonaws.com/limani/credentials'"
 
 # ansible-playbook  limani/deploy_elb_network.yaml -e "region=us-west-2  port_num=31033"
 # ansible-playbook limani/deploy_agent.yaml -e "region=us-west-2 container_image='nginx:latest' replicas_count=2"
