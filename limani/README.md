@@ -63,18 +63,18 @@ Given a target region (e.g., us-east-2) deploy the simulated devices workload by
 1. Deploy a network load balancer and attached it to the kubernetes cluster hosting the device servers
 ```shell
  ansible-playbook limani/deploy_elb_network.yaml -e "region=us-east-2  port_num=31033"
-````
+```
 
 
 2. Add network load balancer region endpoint to the Global Load Balancer
 ```shell
  ansible-playbook limani/deploy_endpoint_glb_accelerator.yaml -e "region=us-east-2 weight=128"
-````
+```
 
 3. Deploy the simulated devices worklod
 ```shell
  ansible-playbook limani/deploy_agent.yaml -e "region=us-east-2  devicesimulator_image='<img_registry>/devicesimulator'  credentials_image=<aws_ecr>/limani/credentials'"
-````
+```
 
 
 ### Destroy the Infrastructure
@@ -85,36 +85,39 @@ Given a target region (e.g., us-east-2) destroy the infrastructure by following 
 
 ```shell
  ansible-playbook limani/delete_endpoint_glb_accelerator.yaml -e "region=us-east-2"
-````
+```
 
 2. Delete local load balancer
 
 ```shell
 ansible-playbook limani/delete_elb_network.yaml -e "region=us-east-2"
-````
+```
 
 3. Delete k8s cluster and ec2 hosts
 
 ```shell
 ansible-playbook delete-ec2.yaml  -e "cluster_name=us-east-2 region=us-east-2 sig_group=limani-nodes"
-````
+```
 
 4. Delete agent ECS cluster
 
 ```shell
 ansible-playbook limani/delete_agent.yaml -e "region=us-east-2"
-````
+```
 
 5. Delete VPC
 
 ```shell
 ansible-playbook limani/delete_vpc_infra.yaml -e "region=us-east-2"
-````
+```
 
 6. Delete Global Load Balancer
 
 ```shell
- ansible-playbook  limani/delete_global_accelerator.yaml
-````
+ansible-playbook limani/delete_global_accelerator.yaml
+```
 
-7. Delete DynamoDB tables and ECR `limani/credentials` repository by hand (e.g. from the AWS web console or AWS CLI). Automation is coming soon.
+7. Delete DynamoDB tables and ECR `limani/credentials` repository
+```shell
+ansible-playbook limani/delete_tables_and_repo.yaml
+```
