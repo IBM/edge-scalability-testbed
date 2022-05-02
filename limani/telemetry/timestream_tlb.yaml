@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  become: yes
+  gather_facts: no
+  vars:
+    db_name: "{{ db_name }}"
+    tbl_name: "{{ tlb_name }}"
+    region: "{{ region }}"
+    mem_store_retention: "{{ mem_store_retention }}"
+    magnetic_store_retention: "{{ magnetic_store_retention }}"
+    verb: "{{ action }}"
+  roles:
+    - aws-timestream/table

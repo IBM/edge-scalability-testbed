@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  become: yes
+  gather_facts: no
+  vars:
+    db_name: "{{ db_name }}"
+    region: "{{ region }}"
+    verb: "{{ action }}"
+  roles:
+    - aws-timestream/database

@@ -1,0 +1,7 @@
+---
+# tasks file for timestreamTbl
+- include_tasks: create.yaml
+  when: verb == "create"
+
+- include_tasks: delete.yaml
+  when: verb == "delete"

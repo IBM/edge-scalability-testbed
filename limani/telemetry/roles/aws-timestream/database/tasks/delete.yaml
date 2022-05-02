@@ -1,0 +1,3 @@
+---
+ - name: Delete AWS TimeStream Database
+   shell: aws timestream-write delete-database --database-name {{ db_name }} --region {{ region }}
