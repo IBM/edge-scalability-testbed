@@ -5,10 +5,10 @@ Self-managed k8s cluster(s) on AWS with prometheus operator, which can be create
 To run the automation for limani, these items are required:
 - Github credentials to get limani code;
 - AWS access key ID and AWS secret access key;
-- AWS CLI installed locally.
+- AWS CLI installed locally (version ).
 
 
-### Deploy Limani Global Infrastructure on AWS
+### Configuring Prometheus Operator with remote_write using AWS TimeStream Database
 
 Given a target region (e.g., us-east-2) deploy the infrastructure by following these steps:
 
@@ -70,4 +70,22 @@ iii) Apply the changes using kubectl:
 
  ```shell
 kubectl apply -f prometheus-prometheus.yaml -n monitoring
+```
+
+7. (Optional) Install and configure Grafana with the AWS Timestream data source:
+
+i) Install: 
+```shell
+sudo apt update
+sudo apt install grafana
+grafana-server -v
+sudo systemctl enable grafana-server
+sudo systemctl start grafana-server
+ ```
+
+ii) Add Timestream plugin:
+```shell
+grafana-cli plugins install grafana-timestream-datasource
+sudo systemctl restart grafana-server
+sudo systemctl status grafana-server
 ```
