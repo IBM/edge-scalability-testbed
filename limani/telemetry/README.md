@@ -72,7 +72,10 @@ iii) Apply the changes using kubectl:
 kubectl apply -f prometheus-prometheus.yaml -n monitoring
 ```
 
-7. (Optional) Install and configure Grafana with the AWS Timestream data source:
+7. (Optional) Repeat steps 2, 4, 5 and 6 for each region where Prometheus operators are deployed: a single AWS TimeStream database and tables to store the data collected in each regions.
+
+
+8. (Optional) Install and configure Grafana with the AWS Timestream data source:
 
 i) Install: 
 ```shell
@@ -83,9 +86,33 @@ sudo systemctl enable grafana-server
 sudo systemctl start grafana-server
  ```
 
-ii) Add Timestream plugin:
+ii) add Timestream plugin:
 ```shell
 grafana-cli plugins install grafana-timestream-datasource
 sudo systemctl restart grafana-server
 sudo systemctl status grafana-server
+```
+
+
+### Delete the components depledy to configure Prometheus Operator with remote_write
+
+
+Given a target region (e.g., us-east-2) delete the infrastructure by following these steps:
+
+1. Delete policy:
+
+```shell
+ ansible-playbook limani/telemetry/timestream_policy.yaml  -e "policy_name=prometheus-timestream action=delete"
+```
+
+2. Delete AWS timestream table:
+
+```shell
+ansible-playbook timestream_tlb.yaml -e "region=us-east-2 db_name=prometheus-database  tbl_name=prometheus-table action=delete"
+```
+
+3. Delete AWS timestream database:
+
+```shell
+ansible-playbook limani/telemetry/timestream_db.yaml -e "region=us-east-2 db_name=prometheus-database action=delete"
 ```
