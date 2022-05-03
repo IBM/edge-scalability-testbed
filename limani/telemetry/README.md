@@ -8,7 +8,7 @@ To run the automation for limani, these items are required:
 - AWS CLI installed locally (CLI version with support for timestream command options).
 
 
-### Configuring Prometheus Operator with remote_write using AWS TimeStream Database
+### Configuring Prometheus Operator with remote_write using AWS TimeStream Database (On-going Work)
 
 Given a target region (e.g., us-east-2) deploy the infrastructure by following these steps:
 
