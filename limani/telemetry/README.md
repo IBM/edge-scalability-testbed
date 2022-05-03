@@ -77,7 +77,7 @@ kubectl apply -f prometheus-prometheus.yaml -n monitoring
 
 8. (Optional) Install and configure Grafana with the AWS Timestream data source:
 
-i) Install: 
+i) install: 
 ```shell
 sudo apt update
 sudo apt install grafana
@@ -86,7 +86,7 @@ sudo systemctl enable grafana-server
 sudo systemctl start grafana-server
  ```
 
-ii) add Timestream plugin:
+ii) add Timestream plugin: select authentication provider "AWS SDK Default" to use the default AWS credentials stored at root/.aws/credentials 
 ```shell
 grafana-cli plugins install grafana-timestream-datasource
 sudo systemctl restart grafana-server
