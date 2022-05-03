@@ -1,0 +1,109 @@
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  gather_facts: no
+  vars:
+   deploy_type: "{{ deploy_type }}" # types: process or pod only
+   region: "{{ region }}"
+   prometheus_database: "{{ prometheus_database }}"
+   prometheus_table: "{{ prometheus_table }}"
+   metric_path: "{{ metric_path }}"
+  collections:
+    - kubernetes.core
+  tasks:
+    - name: Get prometheus-timestream-adapter code
+      shell: |
+        git -C /root/braulio clone https://github.com/dpattmann/prometheus-timestream-adapter.git
+      when: deploy_type == "process"
+
+    - name: Build and run prometheus-timestream-adapter
+      become: yes
+      shell: |
+        sudo /usr/bin/go/bin/go build
+        nohup ./prometheus-timestream-adapter --awsRegion {{ region }}  --databaseName {{ prometheus_database }}  --tableName {{ prometheus_table }} --telemetryPath {{ metric_path }} >& log_timestream.txt &
+      args:
+        executable: /bin/bash
+        chdir: /root/braulio/prometheus-timestream-adapter
+      when: deploy_type == "process"
+
+    - name: Install python Dependence
+      shell: pip install kubernetes
+      when: deploy_type == "pod"
+
+    - name: Create a k8s namespace
+      kubernetes.core.k8s:
+        name: timestream-adapter
+        api_version: v1
+        kind: Namespace
+        state: present
+      when: deploy_type == "pod"
+
+    - name: Create a deployment
+      k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: example
+            namespace: timestream-adapter
+            labels:
+              app: timestream
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: timestream
+            template:
+              metadata:
+                labels:
+                  app: timestream
+              spec:
+                containers:
+                - name: timestream
+                  image: localhost:5000/timestream-luanda
+                  ports:
+                  - containerPort: 9201
+                  env:
+                  - name: awsRegion
+                    value: "{{ region }}"
+                  - name: databaseName
+                    value: "{{ prometheus_database }}"
+                  - name: tls
+                    value: "false"
+                  - name: listenAddr
+                    value: ":9201"
+                  - name: logLevel
+                    value: "error"
+                  - name: tableName
+                    value: "{{ prometheus_table }}"
+                  - name: telemetryPath
+                    value: "{{ metric_path }}"
+                  command: ["/usr/local/bin/prometheus-timestream-adapter"]
+                  args:
+                  - --awsRegion=$awsRegion
+                  - --databaseName=$databaseName
+                  - --tableName=$tableName
+                  - --telemetryPath=$telemetryPath
+      when: deploy_type == "pod"
+
+    - name: Create TimeStream Service object
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: timestream
+            namespace: timestream-adapter
+            labels:
+              app: timestream
+          spec:
+            selector:
+              app: timestream
+            type: NodePort
+            ports:
+              - port: 8000
+                nodePort: 31000
+                name: http
+      when: deploy_type == "pod"
