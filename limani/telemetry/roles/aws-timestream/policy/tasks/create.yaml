@@ -1,0 +1,12 @@
+- name: Create Policy to Access Timestream Database
+  community.aws.iam_policy:
+    iam_type: group
+    iam_name:  admin
+    policy_name: "{{ policy_name }}"
+    state: present
+    policy_json: " {{ lookup( 'template', 'files/timestream-policy.json') }} "
+  register: timestream_db_output
+
+- name: Debug AWS TimeStream Table Creation
+  ansible.builtin.debug:
+    msg: "{{ timestream_db_output }}"

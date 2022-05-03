@@ -1,0 +1,26 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowReadWriteToTable",
+            "Effect": "Allow",
+            "Action": [
+                "timestream:WriteRecords",
+                "timestream:Select"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "AllowDescribeEndpoints",
+            "Effect": "Allow",
+            "Action": "timestream:DescribeEndpoints",
+            "Resource": "*"
+        },
+        {
+            "Sid": "AllowValueRead",
+            "Effect": "Allow",
+            "Action": "timestream:SelectValues",
+            "Resource": "*"
+        }
+    ]
+}

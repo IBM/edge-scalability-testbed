@@ -1,0 +1,9 @@
+---
+- hosts: localhost
+  become: yes
+  gather_facts: no
+  vars:
+    policy_name: "{{ policy_name }}"
+    verb: "{{ action }}"
+  roles:
+    - aws-timestream/policy

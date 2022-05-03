@@ -1,0 +1,12 @@
+---
+- name: Create AWS TimeStream Database
+  shell: aws timestream-write create-database --database-name {{ db_name }} --region {{ region }}
+  register: timestream_db_output
+
+- name: Set AWS TimeStream Database Creation Facts
+  set_fact:
+    timestream_db: "{{ timestream_db_output.stdout }}"
+
+- name: Debug AWS TimeStream Database Creation
+  ansible.builtin.debug:
+    msg: "{{ timestream_db }}"

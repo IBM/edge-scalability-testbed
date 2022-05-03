@@ -1,0 +1,6 @@
+- name: Delete Policy to Access Timestream Database
+  community.aws.iam_policy:
+    iam_type: group
+    iam_name:  admin
+    policy_name: "{{ policy_name }}"
+    state: absent

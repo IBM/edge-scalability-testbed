@@ -1,0 +1,12 @@
+
+- name: Create AWS TimeStream Database Tables
+  shell: aws timestream-write create-table --database-name {{ db_name }} --table-name {{ tbl_name }} --region {{ region }} --retention-properties MemoryStoreRetentionPeriodInHours={{ mem_store_retention }},MagneticStoreRetentionPeriodInDays={{ magnetic_store_retention }}
+  register: timestream_tlb_output
+
+- name: Set AWS TimeStream Database Creation Facts
+  set_fact:
+    timestream_tlb: "{{ timestream_tlb_output.stdout }}"
+
+- name: Debug AWS TimeStream Table Creation
+  ansible.builtin.debug:
+    msg: "{{ timestream_tlb }}"
