@@ -86,12 +86,13 @@ sudo systemctl enable grafana-server
 sudo systemctl start grafana-server
  ```
 
-ii) add Timestream plugin: select authentication provider "AWS SDK Default" to use the default AWS credentials stored at root/.aws/credentials (for further details see tutorial "Visualizing Data in Amazon Timestream using Grafana": https://www.youtube.com/watch?v=pilkz645cs4)
-```shell
+ii) add Timestream plugin: select authentication provider "AWS SDK Default" to use the default AWS credentials stored at root/.aws/credentials
 grafana-cli plugins install grafana-timestream-datasource
 sudo systemctl restart grafana-server
 sudo systemctl status grafana-server
 ```
+
+For further details see tutorial "Visualizing Data in Amazon Timestream using Grafana": https://www.youtube.com/watch?v=pilkz645cs4
 
 
 ### Delete the components depledy to configure Prometheus Operator with remote_write
