@@ -87,6 +87,8 @@ sudo systemctl start grafana-server
  ```
 
 ii) add Timestream plugin: select authentication provider "AWS SDK Default" to use the default AWS credentials stored at root/.aws/credentials
+
+```shell
 grafana-cli plugins install grafana-timestream-datasource
 sudo systemctl restart grafana-server
 sudo systemctl status grafana-server
