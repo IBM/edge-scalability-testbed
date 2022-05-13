@@ -128,6 +128,22 @@
   args:
     chdir: /root/limani/
 
+- name: Update nodePort for service limani-deviceserver
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: limani-deviceserver
+        namespace: limani-system
+      spec:
+        ports:
+        - nodePort: "{{ deviceserver_node_port }}"
+          port: 8443
+          protocol: TCP
+          targetPort: 8443
+
 
 # one-shot agent
 - name: Generate cert for agent
