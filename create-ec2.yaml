@@ -53,7 +53,7 @@
     when: default_vpc | bool
 
   - name: Read VPC configuration data
-    include_vars: ".data/{{ aws_region }}_vpc_helper_vars.yaml"
+    include_vars: ".data/{{ aws_region }}_core_vpc_helper_vars.yaml"
     when: not default_vpc
 
   - name: Set subnet id fact for default VPC
