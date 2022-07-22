@@ -1,0 +1,18 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    region: "{{ region }}"
+    endpoints: "{{ lookup('file', '../.data/{{ region }}_endpoint_helper_vars.yaml') }}"
+  tasks:
+    - name: Delete Accelerator Endpoint Group
+      shell: aws --region us-west-2 globalaccelerator delete-endpoint-group  --endpoint-group-arn {{ item }}
+      with_items: 
+        - "{{ endpoints.split('\n') }}"
+
+    - name: Remove endpoint helper file
+      ansible.builtin.file:
+        path: "../.data/{{ region }}_endpoint_helper_vars.yaml"
+        state: absent
+
+

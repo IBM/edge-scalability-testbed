@@ -1,0 +1,63 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    accelerator_name: "{{ accelerator_name }}"
+    endpoint_region: "{{ region }}"
+    weight: "{{ weight }}"
+    port_num: "{{ port_num }}"
+  tasks:
+    - name: Load a variable files
+      include_vars:  "{{ item }}"
+      loop:
+        - "../.data/accelerator_listeners_vars.yaml"
+
+    - name: Read instance data
+      include_vars:
+        file: "../.data/ec2_instances_{{ region }}.json"
+        name: ec2_instances
+
+    - name: Get instance IDs
+      set_fact:
+        instance_ids: '{{ ec2_instances | community.general.json_query("instances[*].id") }}'  ## Get the EC2 instances Ids
+
+    - name: Debug instance IDs
+      ansible.builtin.debug:
+        msg: "{{ instance_ids }}"
+
+    - name: Create endpoint list
+      set_fact: 
+        endpoint_list: '{{ endpoint_list | default([]) + [{ "EndpointId" : item, "Weight" : weight | int, "ClientIPPreservationEnabled": true}] }}'
+      with_items: 
+        - "{{ instance_ids }}"
+
+    - name: Debug message endpoint list
+      ansible.builtin.debug:
+        msg: "{{ endpoint_list }}"
+
+    - name: Create AWS Global Accelerator Endpoint Group
+      shell: |
+          aws --region us-west-2 globalaccelerator create-endpoint-group \
+              --listener-arn {{ vars['listener_arn_' + port_num] }} \
+              --endpoint-group-region {{ endpoint_region }} \
+              --endpoint-configurations '{{ endpoint_list | to_json }}'
+      register: glt_endpoint_output
+
+    - name: Set Accelerator Endpoint Group Facts
+      set_fact:
+        glt_endpointGroup: "{{ glt_endpoint_output.stdout}}"
+
+    - name: Debug Accelerator Endpoint Group
+      ansible.builtin.debug:
+        msg: "{{ glt_endpointGroup }}"
+
+    - name: Create vars file to help with deletion of endpoints attached to a Global Accelerator
+      ansible.builtin.lineinfile:
+        path: "../.data/{{ endpoint_region }}_endpoint_helper_vars.yaml"
+        line: "'{{ glt_endpointGroup.EndpointGroup.EndpointGroupArn }}'"
+        create: yes
+
+    # - name: Create vars file to help with deletion of endpoints attached to a Global Accelerator
+    #   ansible.builtin.copy:
+    #     content: "endpoint_group_arn: '{{ glt_endpointGroup.EndpointGroup.EndpointGroupArn }}'"
+    #     dest: "../.data/{{ endpoint_region }}_endpoint_helper_vars.yaml"

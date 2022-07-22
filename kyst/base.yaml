@@ -1,0 +1,117 @@
+---
+- hosts: masters
+  remote_user: ubuntu
+  become: yes
+  gather_facts: yes
+  connection: ssh
+  vars:
+    aws_region: us-west-1
+  tasks:
+    - fail: msg="github_token is required"
+      when: github_token is undefined
+
+    - fail: msg="aws_access_key is required"
+      when: aws_access_key is undefined
+
+    - fail: msg="aws_secret_key is required"
+      when: aws_secret_key is undefined
+
+    - name: Get kyst code
+      shell: |
+        rm -rf /root/kyst
+        git -C /root/ clone https://{{ github_token }}@github.com/edge-experiments/kyst.git
+
+    # - name: Create bin/ for kyst
+    #   ansible.builtin.file:
+    #     path: /root/kyst/bin
+    #     state: directory
+    #     mode: '0755'
+
+    - name: Install kubebuilder
+      shell: |
+        curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(go env GOARCH)
+        chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
+
+    - name: Install golang
+      shell: |
+        curl -LO https://go.dev/dl/go1.17.linux-amd64.tar.gz
+        rm -rf /usr/local/go && tar -C /usr/local -xzf go1.17.linux-amd64.tar.gz
+        export PATH=$PATH:/usr/local/go/bin
+        . ~/.bashrc
+        exec bash
+        go version
+    - name: Edit bashrc
+      ansible.builtin.lineinfile:
+        path: /root/.bashrc
+        line: "export PATH=$PATH:/usr/local/go/bin"
+
+    - name: Let kc = kubectl
+      ansible.builtin.lineinfile:
+        path: /root/.bashrc
+        line: "alias kc='kubectl'"
+
+    - name: Install make
+      shell: |
+        apt update
+        apt install -y make
+    - name: Install easyrsa
+      shell: |
+        curl -LO https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz
+        tar -xzf EasyRSA-3.0.8.tgz
+        cp -r EasyRSA-3.0.8/* /usr/local/bin/ && rm -rf EasyRSA-3.0.8 EasyRSA-3.0.8.tgz
+    - name: Install controller-gen
+      shell: |
+        export PATH=$PATH:/usr/local/go/bin
+        make controller-gen
+      args:
+        chdir: /root/kyst/
+      failed_when: false
+
+    - name: Install gcc
+      shell: |
+        apt update
+        apt install -y build-essential
+    - name: Install kustomize
+      shell: |
+        export PATH=$PATH:/usr/local/go/bin
+        make kustomize
+      args:
+        chdir: /root/kyst/
+      failed_when: false
+
+    - name: Install python package kubernetes
+      shell: |
+        apt install python3-pip -y
+        /usr/bin/python3 -m pip install kubernetes
+    - name: Install unzip 
+      shell: |
+        apt update
+        apt install -y unzip
+    - name: Install aws CLI
+      shell: |
+        rm -f /usr/local/bin/aws
+        rm -f /usr/local/bin/aws_completer
+        rm -rf /usr/local/aws-cli
+        rm -rf ./aws
+        rm -f awscliv2.zip
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        ./aws/install
+    - name: Configure aws CLI
+      shell: aws configure set {{ item.key }} {{ item.value }}
+      no_log: True
+      with_dict:
+        aws_access_key_id: "{{ aws_access_key | default('dummy') }}"
+        aws_secret_access_key: "{{ aws_secret_key | default('dummy') }}"
+        region: "{{ aws_region }}"
+        format: "yaml"
+
+    - name: Get the public IP address of the node
+      shell: curl ifconfig.me
+      register: node_public_ip
+
+    - name: Modify SAN (for device server)
+      ansible.builtin.lineinfile:
+        path: /root/kyst/hack/ca-init.sh
+        regexp: '^MASTER_IP='
+        line: "MASTER_IP={{ node_public_ip.stdout }}"

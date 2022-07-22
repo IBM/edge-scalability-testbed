@@ -1,0 +1,25 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    port_num: "{{ port_num }}"
+    multiple: no
+  tasks:
+    - include_vars: "../.data/accelerator_listeners_vars.yaml"
+
+    - name: Delete Accelerator Listener
+      shell: aws --region us-west-2 globalaccelerator  delete-listener --listener-arn  {{ vars['listener_arn_' + item] }}
+      with_items: 
+        - "{{ port_num.split(',') }}"
+      when: multiple | bool
+
+    - name: Delete Accelerator Listener
+      shell: aws --region us-west-2 globalaccelerator  delete-listener --listener-arn  {{ vars['listener_arn_' + port_num] }}
+      when: not multiple
+
+    - name: Remove endpoint helper file
+      ansible.builtin.file:
+        path: "../.data/accelerator_listeners_vars.yaml"
+        state: absent
+
+

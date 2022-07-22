@@ -1,0 +1,48 @@
+---
+- hosts: localhost
+  become: yes
+  gather_facts: no
+  vars:
+    accelerator_name: "{{ accelerator_name }}"
+    port_num: "{{ port_num }}"
+  tasks:
+    - include_vars: "../.data/{{ accelerator_name }}_global_accelerator_vars.yaml"
+
+    - name: Create listener port list
+      set_fact: 
+        port_list: '{{ port_list | default([]) + [{ "FromPort": item |int, "ToPort": item |int}] }}'
+      with_items: 
+        - "{{ port_num.split(',') }}"
+
+    - name: Debug message endpoint list
+      ansible.builtin.debug:
+        msg: "{{ port_list }}"
+
+    - name: Create AWS Global Accelerator Listener
+      shell: |
+            aws --region us-west-2  globalaccelerator create-listener \
+              --accelerator-arn {{ accelerator_arn }} \
+              --port-ranges '{{ port_list | to_json }}' \
+              --protocol TCP 
+      register: glt_listiner_output
+     
+
+    - name: Set Global Accelerator Listener Facts
+      set_fact:
+        glt_listener: "{{ glt_listiner_output.stdout}}"
+
+    - name: Debug Global Accelerator Listener
+      ansible.builtin.debug:
+        msg: "{{ glt_listener }}"
+
+    - name: Create a directory to persist Global Accelerator data if it does not exist
+      ansible.builtin.file:
+        path: ../.data
+        state: directory
+        mode: '0755'
+
+    - name: Create vars file to help with deletion of AWS Global Accelerator
+      ansible.builtin.lineinfile:
+        path: "../.data/accelerator_listeners_vars.yaml"
+        line: "listener_arn_{{ port_num }}: '{{ glt_listener.Listener.ListenerArn }}'"
+        create: yes

@@ -1,0 +1,138 @@
+---
+- hosts: localhost
+  gather_facts: no
+  vars:
+    region: "{{ region }}"
+    cluster_ecs_name: "{{ ecs_cluster_name | default('devicesimulator') }}"
+    task_name: "{{ ecs_task_name | default('devicesimulator') }}"
+    container_name: "{{ ecs_container_name | default('devicesimulator') }}"
+    devicesimulator_image: "{{ devicesimulator_image }}"
+    credentials_image: "{{ credentials_image }}"
+    num_replicas: "{{ replicas_count | default(1) }}"
+    ingress_port: "{{ ingress_port }}"
+    num_shards: "{{ num_shards }}"
+    AcceleratorDNS: "{{ AcceleratorDNS }}" # just for testing
+    port_num: 80
+  tasks:
+    - include_vars: "../.data/{{ region }}_edge_vpc_helper_vars.yaml"
+    #- include_vars: "../.data/global_accelerator_vars.yaml"
+
+    - name: Creating security group rule descriptions
+      amazon.aws.ec2_group:
+        name: "{{ task_name }}-securityGroup"
+        description: "sg for ecs task {{ task_name }}"
+        vpc_id:  "{{ vpc_id }}"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            ports:
+            - "{{ port_num }}"
+            cidr_ip: 0.0.0.0/0
+            rule_desc: allow all on target port
+      register: result_sg
+
+    - name: Debug Security Group
+      ansible.builtin.debug:
+        msg: "{{ result_sg }}"
+
+    - name: Create a log group
+      community.aws.cloudwatchlogs_log_group:
+        log_group_name: "{{ task_name }}"
+        region: "{{ region }}"
+        state: present
+
+    - name: Cluster creation
+      community.aws.ecs_cluster:
+        name: "{{ cluster_ecs_name }}"
+        region: "{{ region }}"
+        state: present
+
+    - name: Create task definition
+      community.aws.ecs_taskdefinition:
+        family: "{{ task_name }}"
+        region: "{{ region }}"
+        containers:
+        - name: "{{ container_name }}"
+          image: "{{ devicesimulator_image }}" 
+          essential: true
+          portMappings:
+          - containerPort: "{{ port_num }}"
+            hostPort: "{{ port_num }}"
+            protocol: "tcp"
+          entryPoint:
+          - /devicesimulator
+          command:
+            # kubernetes related config
+            - -namespace=default
+            # device inventory related parameters
+            - -num-shards={{ num_shards }}
+            - -inventory-kubeconf=/kube/kube.conf
+            - -inventory-server-url=https://{{ AcceleratorDNS }}:{{ ingress_port }}/clusters/root
+            - -inventory-server-name=inventory-(shard).inventory.kyst-system.svc.cluster.local
+            - -device-extra-labels=region={{ region }}
+            # device config API related parameters
+            - -ca-cert-file=/tls/ca.crt
+            - -ca-key-file=/tls/ca.key
+            - -device-server-url=https://{{ AcceleratorDNS }}:{{ ingress_port }}/clusters/root
+            - -device-server-name=device-config-(shard).device-config.kyst-system.svc.cluster.local
+            # infrastructure
+            - -metrics-bind-address=0.0.0.0:8080
+            # simulation parameters
+            - -fetch-spec-interval=30s
+            - -status-update-interval=60s
+            - -num=2 # TODO: keep tuning
+            - -only-update-status=false
+            # log sanity
+            - -use-zap=false
+            - -v=3
+            - -zap-time-encoding=rfc3339nano
+            - -zap-log-level=3
+          volumesFrom:
+          - sourceContainer: credentials
+          logConfiguration:
+            logDriver: awslogs
+            options:
+              awslogs-group: "{{ task_name }}"
+              awslogs-region: "{{ region }}"
+              awslogs-stream-prefix: ecs
+        - name: credentials
+          essential: false
+          image: "{{ credentials_image }}"
+        launch_type: FARGATE
+        cpu: 1024
+        memory: 2GB
+        state: present
+        network_mode: awsvpc
+        execution_role_arn: ecsTaskExecutionRole
+      register: task_definition_output
+
+    - name: Debug Task Definition
+      ansible.builtin.debug:
+        msg: "{{ task_definition_output }}"
+
+    # Basic provisioning example
+    - name: Provisioning ECS Service
+      community.aws.ecs_service:
+        state: present
+        region: "{{ region }}"
+        name: "{{ task_name }}-service"
+        cluster:  "{{ cluster_ecs_name }}"
+        task_definition: "{{ task_name }}"
+        desired_count: "{{ num_replicas }}"
+        launch_type: FARGATE
+        network_configuration:
+          assign_public_ip: no
+          subnets:
+          - "{{ private_subnet_id }}"
+          security_groups:
+          -  "{{ result_sg.group_id }}"
+      register: ecs_service_output
+
+    - name: Debug ECS Service
+      ansible.builtin.debug:
+        msg: "{{ ecs_service_output }}"
+
+    - name: Create vars file to help with deletion of resources
+      ansible.builtin.copy:
+        content: "cluster_name: {{ cluster_ecs_name }}\ntask_name: {{ task_name }}\ncontainerName: {{ container_name }}\nsg_id: {{ result_sg.group_id }}"
+        dest: "../.data/{{ region }}_{{ cluster_ecs_name }}_agent_helper_vars.yaml"

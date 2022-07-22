@@ -1,0 +1,30 @@
+---
+- hosts: localhost
+  become: yes
+  gather_facts: no
+  vars:
+    name: "{{ name }}"
+  tasks:
+    #- include_vars: "{{ region }}_device_helper_vars.yaml"
+    - name: Create AWS Global Accelerator
+      shell: aws globalaccelerator create-accelerator --name {{ name }} --region us-west-2 
+      register: glt_output
+
+    - name: Set Global Accelerator Creation Facts
+      set_fact:
+        glt_accelerator: "{{ glt_output.stdout }}"
+
+    - name: Debug Global Accelerator Creation
+      ansible.builtin.debug:
+        msg: "{{ glt_accelerator}}"
+
+    - name: Create a directory to persist Global Accelerator data if it does not exist
+      ansible.builtin.file:
+        path: ../.data
+        state: directory
+        mode: '0755'
+
+    - name: Create vars file to help with deletion of AWS Global Accelerator
+      ansible.builtin.copy:
+        content: "AcceleratorDNS: '{{ glt_accelerator.Accelerator.DnsName }}'\naccelerator_arn: '{{ glt_accelerator.Accelerator.AcceleratorArn }}'"
+        dest: "../.data/{{ name }}_global_accelerator_vars.yaml"

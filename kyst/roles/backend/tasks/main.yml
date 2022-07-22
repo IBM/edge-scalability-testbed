@@ -1,0 +1,163 @@
+# ---
+- name: Read instance data
+  include_vars:
+    file: "../.data/ec2_instances_{{ aws_region }}.json"
+    name: ec2_instances
+
+- name: Get clusternode address
+  set_fact:
+    clusternode: '{{ ec2_instances | community.general.json_query("instances[0].private_ip") }}'  ## Get the EC2 instances Ids
+
+- name: Debug clusternode address
+  ansible.builtin.debug:
+    msg: "{{ clusternode }}"
+
+- name: Get the public IP address of the node
+  shell: curl ifconfig.me
+  register: node_public_ip
+
+- name: Modify SAN (for device server)
+  ansible.builtin.lineinfile:
+    path: /root/kyst/hack/ca-init.sh
+    regexp: '^MASTER_IP='
+    line: "MASTER_IP={{ node_public_ip.stdout }}"
+
+- name: Build pki
+  shell: |
+    hack/ca-init.sh
+  args:
+    chdir: /root/kyst/
+
+# deployment Kyst with kcp arrays
+- name: Login to registry
+  shell: |
+    docker login -u {{ img_registry }} -p {{ img_registry_pswd }}
+    
+- name: Deploy Ingress controller
+  shell: |
+    hack/kcp/deploy-nginx-cont.sh {{ http_nodeport }}  {{ https_nodeport }}
+  args:
+    chdir: /root/kyst/
+  when: ingress | bool
+
+- name: Deploy kyst-kcp inventory and device-config arrays
+  shell: |
+    export PATH=$PATH:/usr/local/go/bin
+    make docker-build docker-push IMG_REGISTRY={{ img_registry }}
+    make deploy IMG_REGISTRY={{ img_registry }}
+    ./deploy/mk-device-groups-and-configs.sh -s {{ namespace }} -c true -l 470
+    hack/kcp/gen-kcp-array.sh {{ myenv }} {{ namespace }}    inventory  {{ num_shards }}  -m   500 -c 1000
+    hack/kcp/gen-kcp-array.sh {{ myenv }} {{ namespace }} device-config {{ num_shards }}  -m 1000 -c 1000
+  args:
+    chdir: /root/kyst/
+
+- name: Set-up ingress configurations
+  shell: |
+      hack/kcp/add-array-clusterip-services.sh {{ namespace }}     inventory $(kubectl -n {{ namespace }} get sts     inventory -o jsonpath='{.spec.replicas}')
+      hack/kcp/add-array-clusterip-services.sh {{ namespace }} device-config $(kubectl -n {{ namespace }} get sts device-config -o jsonpath='{.spec.replicas}')
+      hack/kcp/gen-kcp-ingress.sh {{ namespace }}     inventory $(kubectl -n {{ namespace }} get sts     inventory -o jsonpath='{.spec.num_shards}')
+      hack/kcp/gen-kcp-ingress.sh {{ namespace }} device-config $(kubectl -n {{ namespace }} get sts device-config -o jsonpath='{.spec.num_shards}')
+      hack/kcp/gen-kcp-kubeconfig.sh {{ myenv }} {{ namespace }}     inventory -s {{ clusternode }}:{{ https_nodeport }}
+      hack/kcp/gen-kcp-kubeconfig.sh {{ myenv }} {{ namespace }} device-config -s {{clusternode }}:{{ https_nodeport }}
+      hack/kcp/foreach-member-of.sh byname     hack/kcp/envs/{{ myenv }}/{{ namespace }}/inventory-kubeconfig-remote.yaml $(kubectl -n {{ namespace }} get sts     inventory -o jsonpath='{.spec.replicas}') 'kubectl create ns {{ namespace }}; kubectl create ns scaletest; kubectl create -f crds.yaml'
+      hack/kcp/foreach-member-of.sh byname hack/kcp/envs/{{ myenv }}/{{ namespace }}/device-config-kubeconfig-remote.yaml $(kubectl -n {{ namespace }} get sts device-config -o jsonpath='{.spec.replicas}') 'kubectl create ns {{ namespace }}; kubectl create ns scaletest; kubectl create -f crds.yaml'
+  args:
+    chdir: /root/kyst/
+  when: ingress | bool
+
+
+- name: Set-up nodePort configurations
+  shell: |
+    hack/kcp/add-array-nodeports.sh {{ namespace }}    inventory $(kubectl -n {{ namespace }} get sts     inventory -o jsonpath='{.spec.replicas}')  {{ https_nodeport }}
+    hack/kcp/add-array-nodeports.sh {{ namespace }} device-config $(kubectl -n {{ namespace }} get sts device-config -o jsonpath='{.spec.replicas}') {{ http_nodeport }}
+    hack/kcp/gen-kcp-kubeconfig.sh {{ myenv }} {{ namespace }} --insecure-skip-tls-verify true     inventory -s {{ clusternode }}:{{ https_nodeport }}
+    hack/kcp/gen-kcp-kubeconfig.sh {{ myenv }} {{ namespace }} --insecure-skip-tls-verify true device-config -s {{ clusternode }}:{{ http_nodeport }}
+    hack/kcp/foreach-member-of.sh byport     hack/kcp/envs/{{ myenv }}/{{ namespace }}/inventory-kubeconfig-insecure.yaml $(kubectl -n {{ namespace }} get sts     inventory -o jsonpath='{.spec.replicas}') 'kubectl create ns {{ namespace }}; kubectl create ns scaletest; kubectl create -f crds.yaml'
+    hack/kcp/foreach-member-of.sh byport hack/kcp/envs/{{ myenv }}/{{ namespace }}/device-config-kubeconfig-insecure.yaml $(kubectl -n {{ namespace }} get sts device-config -o jsonpath='{.spec.replicas}') 'kubectl create ns {{ namespace }}; kubectl create ns scaletest; kubectl create -f crds.yaml'
+  args:
+    chdir: /root/kyst/
+  when: not ingress
+
+
+- name: Finish last configurations
+  shell: |
+    kubectl -n {{ namespace }} scale deploy kyst-controller     --replicas=0
+    kubectl -n {{ namespace }} scale deploy kyst-deviceserver   --replicas=0
+    kubectl -n {{ namespace }} scale deploy kyst-dynamodb       --replicas=0
+    kubectl -n {{ namespace }} scale deploy kyst-backend-layer2 --replicas=1
+    kubectl -n {{ namespace }} scale sts    kyst-backend-layer1 --replicas=$(kubectl -n {{ namespace }} get cm inventory-sharding -o jsonpath='{.data.num_shards}')
+  args:
+    chdir: /root/kyst/
+
+
+# Build container image for credentials
+- name: Change mode for credentials
+  file:
+    path: /root/kyst/hack/kcp/envs/{{ myenv }}/kyst-system/pki/device-config/ca.crt
+    mode: 0644
+
+- name: Change mode for credentials
+  file:
+    path: /root/kyst/hack/kcp/envs/{{ myenv }}/kyst-system/pki/device-config/private/ca.key
+    mode: 0644
+
+- name: Change mode for kubeconfig
+  file:
+    path: /root/kyst/hack/kcp/envs/{{ myenv }}/kyst-system/inventory-kubeconfig.yaml
+    mode: 0644
+
+- name: Copy Dockerfile for the credentials container image
+  ansible.builtin.copy:
+    src: Dockerfile_Credentials
+    dest: /root/kyst/deploy/Dockerfile_Credentials
+
+- name: Prepare the kubeconfig file for the credentials container image
+  shell: |
+    cp /root/kyst/hack/kcp/envs/{{ myenv }}/kyst-system/inventory-kubeconfig.yaml  /root/kyst/inventory-kubeconfig.yaml
+
+- name: Get the public IP address of the node
+  shell: curl ifconfig.me
+  register: node_public_ip
+
+- name: Replace apiserver's IP address in the kubeconfig file
+  ansible.builtin.replace:
+    path: /root/kyst/inventory-kubeconfig.yaml
+    regexp: '^\s+server:.*'
+    replace: "    server: https://{{ node_public_ip.stdout }}:6443"
+
+- name: Get AWS account ID
+  shell: |
+    aws sts get-caller-identity --query "Account" --output text
+  register: aws_account_id
+
+- name: Compose the name of the credentials container image
+  set_fact:
+    credentials_image: "{{ aws_account_id.stdout }}.dkr.ecr.{{ aws_region }}.amazonaws.com/kyst/credentials"
+
+- name: Build the credentials container image
+  shell: |
+    docker build -t {{ credentials_image }}  --build-arg MYENV={{ myenv }} -f deploy/Dockerfile_Credentials .
+  args:
+    chdir: /root/kyst/
+
+- name: Fetch the kubeconfig file
+  ansible.builtin.fetch:
+    src: /root/kyst/inventory-kubeconfig.yaml
+    dest: ../.data/{{ myenv }}-inventory-kubeconfig.yaml
+    flat: true
+
+- name: Remove the kubeconfig file
+  shell: |
+    rm -f /root/kyst/inventory-kubeconfig.yaml
+- name: Login AWS ECR
+  shell: |
+    aws ecr get-login-password --region {{ aws_region }} | docker login --username AWS --password-stdin {{ aws_account_id.stdout }}.dkr.ecr.{{ aws_region }}.amazonaws.com
+- name: Create Repo for the credentials container image on AWS ECR
+  shell: |
+    aws ecr create-repository --repository-name kyst/credentials --region {{ aws_region }} 2>/dev/null | true
+- name: Push the credentials container image to AWS ECR
+  shell: |
+    docker push {{ credentials_image }}
+- name: Show the credentials container image
+  debug:
+    msg: "Container image for credentials: {{ credentials_image }}"
