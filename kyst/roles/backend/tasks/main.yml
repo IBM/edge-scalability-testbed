@@ -4,13 +4,37 @@
     file: "../.data/ec2_instances_{{ aws_region }}.json"
     name: ec2_instances
 
+- name: Create EC2 dict of public ip to private ip mapping
+  set_fact:
+    nodes_addresses: "{{ nodes_addresses|default({}) | combine( {item.public_ip: item.private_ip} ) }}"
+  with_items:
+    - "{{ ec2_instances.instances }}"
+
+- name: Get non-kyst node address
+  set_fact:
+    nonkystnode: '{{ non_kyst_node }}'
+
+- name: Debug non-kyst node address
+  ansible.builtin.debug:
+    msg: "{{ nonkystnode }}"
+
+- name: Build non-kyst node k8s node label
+  set_fact:
+    nonkystnode_k8s_label: "ip-{{ ( nodes_addresses[ nonkystnode] ) | replace('.','-') }}"
+
 - name: Get clusternode address
   set_fact:
-    clusternode: '{{ ec2_instances | community.general.json_query("instances[0].private_ip") }}'  ## Get the EC2 instances Ids
+    clusternode: "{{ clusternode }}"
 
 - name: Debug clusternode address
   ansible.builtin.debug:
     msg: "{{ clusternode }}"
+
+- name: Label non-kyst and kyst nodes
+  shell: |
+    hack/partition-cluster.sh {{ nonkystnode_k8s_label }}
+  args:
+    chdir: /root/kyst/
 
 - name: Get the public IP address of the node
   shell: curl ifconfig.me

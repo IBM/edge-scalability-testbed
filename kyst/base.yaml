@@ -37,9 +37,8 @@
         curl -LO https://go.dev/dl/go1.17.linux-amd64.tar.gz
         rm -rf /usr/local/go && tar -C /usr/local -xzf go1.17.linux-amd64.tar.gz
         export PATH=$PATH:/usr/local/go/bin
-        . ~/.bashrc
-        exec bash
         go version
+
     - name: Edit bashrc
       ansible.builtin.lineinfile:
         path: /root/.bashrc
@@ -54,11 +53,13 @@
       shell: |
         apt update
         apt install -y make
+        
     - name: Install easyrsa
       shell: |
         curl -LO https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz
         tar -xzf EasyRSA-3.0.8.tgz
         cp -r EasyRSA-3.0.8/* /usr/local/bin/ && rm -rf EasyRSA-3.0.8 EasyRSA-3.0.8.tgz
+
     - name: Install controller-gen
       shell: |
         export PATH=$PATH:/usr/local/go/bin
@@ -67,10 +68,16 @@
         chdir: /root/kyst/
       failed_when: false
 
+    - name: Install jq
+      shell: |
+        apt update
+        apt install -y jq
+
     - name: Install gcc
       shell: |
         apt update
         apt install -y build-essential
+
     - name: Install kustomize
       shell: |
         export PATH=$PATH:/usr/local/go/bin

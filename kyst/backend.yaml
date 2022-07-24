@@ -1,3 +1,25 @@
+- hosts: localhost
+  gather_facts: yes
+  tasks:
+    - name: Assign IPs for k8s masters and workers
+      get_host_ips:
+        inventory_name: "{{ region }}"
+        inventory_group: "worker"
+      register: public_ip_list
+
+    - debug: 
+       var: public_ip_list.ip_list[0]
+
+    - name: set non kyst node fact
+      set_fact:
+        non_kyst_node: "{{ public_ip_list.ip_list[0] }}"
+      register: non_kyst_node
+
+    - name: set clusternode fact
+      set_fact:
+        clusternode: "{{ public_ip_list.ip_list[1] }}"
+      register: clusternode
+
 - hosts: masters
   remote_user: ubuntu
   become: yes
@@ -7,6 +29,8 @@
     aws_region: "{{ region }}"
     http_nodeport: "{{ http_nodeport }}"
     https_nodeport: "{{ https_nodeport }}"
+    clusternode: "{{ hostvars['localhost'].clusternode['ansible_facts']['clusternode'] }}"
+    non_kyst_node: "{{ hostvars['localhost'].non_kyst_node['ansible_facts']['non_kyst_node'] }}"
     myenv: "{{ myenv }}"
     namespace: "{{ namespace }}"
     img_registry: "{{ img_registry }}"
